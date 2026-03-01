@@ -1,43 +1,53 @@
-import { useRef } from 'react';
-import { useActor } from './useActor';
+import { useMemo, useRef } from 'react';
+import { Principal } from '@dfinity/principal';
 import { useInternetIdentity } from './useInternetIdentity';
+import { useActor } from './useActor';
 
 /**
- * Returns true only when ALL three conditions are met simultaneously:
- * 1. Internet Identity has finished initializing (isInitializing === false)
- *    AND has settled at least once (to avoid brief re-init flashes)
- * 2. The user is authenticated with a non-anonymous principal
- * 3. The actor instance is non-null
+ * Returns `isActorReady: true` only when:
+ *  1. isInitializing has settled to false at least once
+ *  2. identity is non-null and non-anonymous
+ *  3. actor is non-null
+ *
+ * Uses a ref-based "has ever settled" flag so that brief re-initialization
+ * flashes from the authClient dependency loop don't reset readiness.
  */
-export function useActorReady(): boolean {
-  const { actor } = useActor();
+export function useActorReady() {
   const { identity, isInitializing } = useInternetIdentity();
+  const { actor } = useActor();
 
-  // Track whether initialization has ever settled to false.
-  // Using a module-level variable so it persists across re-renders without
-  // causing extra renders itself.
-  const hasEverSettled = useRef(false);
+  // Track whether initialization has ever completed
+  const hasEverSettledRef = useRef(false);
   if (!isInitializing) {
-    hasEverSettled.current = true;
+    hasEverSettledRef.current = true;
   }
 
-  // Block if we haven't settled yet (still on first init pass)
-  if (!hasEverSettled.current) return false;
+  const isActorReady = useMemo(() => {
+    // Must have settled at least once
+    if (!hasEverSettledRef.current) return false;
 
-  // Block if currently re-initializing (brief flash after authClient set)
-  // — we allow through since hasEverSettled is true, meaning we already
-  // completed init once. This prevents blocking on the second useEffect run.
+    // Identity must be present and non-anonymous
+    if (!identity) return false;
+    try {
+      if (identity.getPrincipal().isAnonymous()) return false;
+    } catch {
+      return false;
+    }
 
-  // Block if no identity or anonymous principal
-  if (!identity) return false;
-  try {
-    if (identity.getPrincipal().isAnonymous()) return false;
-  } catch {
-    return false;
-  }
+    // Actor must be present
+    if (!actor) return false;
 
-  // Block if actor is not ready
-  if (!actor) return false;
+    return true;
+  }, [identity, actor, isInitializing]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return true;
+  const principalText = useMemo(() => {
+    if (!identity) return '';
+    try {
+      return identity.getPrincipal().toString();
+    } catch {
+      return '';
+    }
+  }, [identity]);
+
+  return { isActorReady, principalText };
 }

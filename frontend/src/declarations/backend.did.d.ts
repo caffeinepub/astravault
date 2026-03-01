@@ -49,11 +49,9 @@ export interface _SERVICE {
     undefined
   >,
   'editVaultNote' : ActorMethod<[bigint, string], undefined>,
-  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCustomLinks' : ActorMethod<[], Array<CustomLink>>,
   'getProfile' : ActorMethod<[], [] | [UserProfile]>,
-  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'getVaultNotes' : ActorMethod<[], Array<VaultNote>>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isEmail2faEnabled' : ActorMethod<[], boolean>,
@@ -62,7 +60,6 @@ export interface _SERVICE {
     undefined
   >,
   'resetVaultPassword' : ActorMethod<[string], undefined>,
-  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'toggleEmail2fa' : ActorMethod<[boolean], undefined>,
   'updateUserProfile' : ActorMethod<
     [string, string, [] | [string], [] | [string]],

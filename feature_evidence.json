@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-audit-frontend-src-app-tsx-specifically-the-authguard-component-and-ensure-it-does-not-make-any-routing-decision-redirect-to-login-or-render-protected-content-while-isinitializing-is-true-while-isinitializing-is-true-render-only-the-full-page-military-themed-loading-spinner-only-after-isinitializing-has-definitively-settled-to-false-may-the-guard-redirect-unauthenticated-users-to-login-or-render-protected-routes",
-      "featureTitle": "Audit `frontend/src/App.tsx` — specifically the `AuthGuard` component — and ensure it does not make any routing decision (redirect to `/login` or render protected content) while `isInitializing` is `true`. While `isInitializing` is `true`, render only the full-page military-themed loading spinner. Only after `isInitializing` has definitively settled to `false` may the guard redirect unauthenticated users to `/login` or render protected routes.",
+      "featureId": "feature-restore-frontend-src-pages-loginpage-tsx-to-a-fully-functional-visually-complete-login-page-with-astravault-branding-matte-black-0a0a0a-background-gold-c9a84c-d4af37-and-military-green-2d4a1e-3a5c28-accents-shield-command-iconography-rajdhani-inter-fonts-and-a-single-login-with-internet-identity-button-wired-to-the-useinternetidentity-hook-s-login-function-already-authenticated-users-identity-resolved-and-non-anonymous-must-be-automatically-redirected-to-the-page-must-be-accessible-at-the-login-route-for-all-unauthenticated-users",
+      "featureTitle": "Restore `frontend/src/pages/LoginPage.tsx` to a fully functional, visually complete login page with AstraVault branding: matte black (#0a0a0a) background, gold (#c9a84c / #d4af37) and military-green (#2d4a1e / #3a5c28) accents, shield/command iconography, Rajdhani/Inter fonts, and a single 'Login with Internet Identity' button wired to the `useInternetIdentity` hook's `login` function. Already-authenticated users (identity resolved and non-anonymous) must be automatically redirected to `/`. The page must be accessible at the `/login` route for all unauthenticated users.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/ProtectedRoute.tsx"
+        "frontend/src/pages/LoginPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,13 +16,13 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-43"
+        "REQ-61"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-audit-frontend-src-hooks-useactorready-ts-and-enforce-that-isactorready-is-true-only-when-all-three-conditions-are-met-in-order-a-isinitializing-from-useinternetidentity-is-false-b-the-principal-is-non-anonymous-not-equal-to-principal-anonymous-and-c-the-actor-instance-returned-by-useactor-is-non-null-if-the-hook-currently-sets-isactorready-to-true-before-isinitializing-has-settled-or-before-the-principal-is-confirmed-non-anonymous-or-before-the-actor-is-non-null-rewrite-it-to-enforce-all-three-conditions-strictly",
-      "featureTitle": "Audit `frontend/src/hooks/useActorReady.ts` and enforce that `isActorReady` is `true` only when all three conditions are met in order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. If the hook currently sets `isActorReady` to `true` before `isInitializing` has settled, or before the principal is confirmed non-anonymous, or before the actor is non-null, rewrite it to enforce all three conditions strictly.",
+      "featureId": "feature-restore-frontend-src-hooks-useactorready-ts-so-that-isactorready-is-true-only-when-all-three-conditions-are-strictly-met-in-order-a-isinitializing-from-useinternetidentity-is-false-b-the-principal-is-non-anonymous-not-equal-to-principal-anonymous-and-c-the-actor-instance-returned-by-useactor-is-non-null-the-hook-must-never-flip-isactorready-to-true-prematurely-export-isactorready-as-a-stable-boolean",
+      "featureTitle": "Restore `frontend/src/hooks/useActorReady.ts` so that `isActorReady` is `true` only when all three conditions are strictly met in order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. The hook must never flip `isActorReady` to `true` prematurely. Export `isActorReady` as a stable boolean.",
       "files": [
         "frontend/src/hooks/useActorReady.ts"
       ],
@@ -36,7 +35,83 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-44"
+        "REQ-63"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restore-frontend-src-hooks-usequeries-ts-so-the-usegetprofile-query-1-has-its-enabled-flag-strictly-gated-on-isactorready-true-2-includes-the-authenticated-principal-string-in-the-react-query-cache-key-e-g-profile-principaltext-so-it-auto-invalidates-when-the-principal-changes-3-treats-a-null-empty-optional-returned-by-the-backend-as-profile-not-found-new-user-flow-not-as-an-error-4-treats-only-a-thrown-exception-as-a-genuine-fetch-failure-iserror-all-other-query-hooks-in-the-file-that-call-backend-functions-must-also-gate-their-enabled-flag-on-isactorready",
+      "featureTitle": "Restore `frontend/src/hooks/useQueries.ts` so the `useGetProfile` query: (1) has its `enabled` flag strictly gated on `isActorReady === true`; (2) includes the authenticated principal string in the React Query cache key (e.g. `['profile', principalText]`) so it auto-invalidates when the principal changes; (3) treats a `null` / empty optional returned by the backend as 'profile not found' (new user flow), not as an error; (4) treats only a thrown exception as a genuine fetch failure (`isError`). All other query hooks in the file that call backend functions must also gate their `enabled` flag on `isActorReady`.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-64"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restore-frontend-src-components-protectedroute-tsx-to-the-strict-state-machine-1-while-isactorready-is-false-or-the-profile-query-isloading-is-true-render-a-full-page-military-themed-loading-spinner-no-redirect-no-children-rendered-2-if-iserror-is-true-render-a-full-page-error-state-with-a-gold-accented-retry-button-that-calls-refetch-3-if-the-user-is-definitively-unauthenticated-not-logged-in-and-actor-initialization-is-complete-redirect-to-login-4-if-data-is-null-profile-not-found-new-user-render-profilesetupmodal-without-redirecting-5-if-profile-data-is-present-render-outlet-children-the-component-must-never-redirect-to-login-during-the-loading-phase",
+      "featureTitle": "Restore `frontend/src/components/ProtectedRoute.tsx` to the strict state machine: (1) While `isActorReady` is `false` OR the profile query `isLoading` is `true` → render a full-page military-themed loading spinner (no redirect, no children rendered). (2) If `isError` is `true` → render a full-page error state with a gold-accented 'Retry' button that calls `refetch()`. (3) If the user is definitively unauthenticated (not logged in AND actor initialization is complete) → redirect to `/login`. (4) If `data` is `null` (profile not found, new user) → render `<ProfileSetupModal>` without redirecting. (5) If profile data is present → render `<Outlet />` / children. The component must never redirect to `/login` during the loading phase.",
+      "files": [
+        "frontend/src/components/ProtectedRoute.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-65"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restore-frontend-src-app-tsx-to-the-version-4-routing-structure-with-routes-login-public-loginpage-protected-dashboardpage-vault-protected-vaultpage-settings-protected-settingspage-the-authguard-component-must-render-only-the-full-page-military-themed-loading-spinner-while-isinitializing-is-true-and-must-never-redirect-to-login-or-render-protected-content-until-isinitializing-has-definitively-settled-to-false",
+      "featureTitle": "Restore `frontend/src/App.tsx` to the Version 4 routing structure with routes: `/login` (public, LoginPage), `/` (protected, DashboardPage), `/vault` (protected, VaultPage), `/settings` (protected, SettingsPage). The `AuthGuard` component must render only the full-page military-themed loading spinner while `isInitializing` is `true` and must never redirect to `/login` or render protected content until `isInitializing` has definitively settled to `false`.",
+      "files": [
+        "frontend/src/App.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-66"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-restore-frontend-src-components-profilesetupmodal-tsx-to-the-version-4-design-a-full-screen-modal-for-new-users-to-register-a-profile-with-fields-for-name-username-optional-email-and-vault-password-sha-256-hashed-client-side-before-submission-on-successful-registration-invalidate-the-profile-principaltext-react-query-cache-key-so-protectedroute-immediately-transitions-from-the-modal-to-the-dashboard-style-the-modal-with-the-military-theme-matte-black-background-gold-accents-military-green-buttons",
+      "featureTitle": "Restore `frontend/src/components/ProfileSetupModal.tsx` to the Version 4 design: a full-screen modal for new users to register a profile with fields for name, username, optional email, and vault password (SHA-256 hashed client-side before submission). On successful registration, invalidate the `['profile', principalText]` React Query cache key so `ProtectedRoute` immediately transitions from the modal to the dashboard. Style the modal with the military theme (matte black background, gold accents, military-green buttons).",
+      "files": [
+        "frontend/src/components/ProfileSetupModal.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-67"
       ],
       "confidence": "high"
     }

@@ -1,78 +1,180 @@
 {
   "kind": "build_request",
-  "title": "Fix 'Securing Connection' hang — correct InternetIdentityProvider URL and AuthGuard initialization guard",
+  "title": "Fix Login Page Display and Internet Identity Verification Flow",
   "projectName": "AstraVault",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-42",
-      "text": "In `frontend/src/main.tsx` (or wherever `InternetIdentityProvider` is instantiated), ensure the `identityProvider` prop is set to the correct URL for the current environment: `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943` when running locally against dfx, and `https://identity.ic0.app` for production. Use `process.env.NODE_ENV`, `import.meta.env.DEV`, or the `DFX_NETWORK` environment variable to select the correct URL at build time. Remove any hardcoded, unreachable, or malformed identity provider URL that could cause the Internet Identity iframe to hang on 'Securing Connection'.",
+      "id": "REQ-61",
+      "text": "Restore `frontend/src/pages/LoginPage.tsx` to a fully functional, visually complete login page with AstraVault branding: matte black (#0a0a0a) background, gold (#c9a84c / #d4af37) and military-green (#2d4a1e / #3a5c28) accents, shield/command iconography, Rajdhani/Inter fonts, and a single 'Login with Internet Identity' button wired to the `useInternetIdentity` hook's `login` function. Already-authenticated users (identity resolved and non-anonymous) must be automatically redirected to `/`. The page must be accessible at the `/login` route for all unauthenticated users.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-4"
         ],
         "quotes": [
-          "Securing Connection' screen still showing"
+          "login page and verification"
         ]
       },
       "acceptanceCriteria": [
-        "The `InternetIdentityProvider` receives the correct `identityProvider` URL for the active environment (local vs. production).",
-        "No hardcoded unreachable URL is present in the provider configuration.",
-        "The Internet Identity iframe loads without hanging on 'Securing Connection' in both local and production environments.",
-        "The environment selection logic uses a reliable build-time or runtime flag (e.g., `import.meta.env.DEV` or `DFX_NETWORK`)."
+        "Navigating to `/login` renders the AstraVault login page with matte black background and gold/green accents",
+        "The 'Login with Internet Identity' button is visible and triggers the Internet Identity login popup when clicked",
+        "An already-authenticated user visiting `/login` is automatically redirected to `/`",
+        "The page uses Rajdhani/Inter fonts consistent with the military theme",
+        "No blank screen, missing content, or JS errors appear on the login route"
       ]
     },
     {
-      "id": "REQ-43",
-      "text": "Audit `frontend/src/App.tsx` — specifically the `AuthGuard` component — and ensure it does not make any routing decision (redirect to `/login` or render protected content) while `isInitializing` is `true`. While `isInitializing` is `true`, render only the full-page military-themed loading spinner. Only after `isInitializing` has definitively settled to `false` may the guard redirect unauthenticated users to `/login` or render protected routes.",
+      "id": "REQ-62",
+      "text": "Ensure `frontend/src/main.tsx` configures the `InternetIdentityProvider` with the correct `identityProvider` URL for each environment: `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943` when `import.meta.env.DEV` is `true`, and `https://identity.ic0.app` for production. Remove any hardcoded, unreachable, or malformed identity provider URL that causes the Internet Identity iframe to hang on 'Securing Connection'. Use `import.meta.env.DEV` or `import.meta.env.VITE_DFX_NETWORK` to select the correct URL at build time.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-4"
         ],
         "quotes": [
-          "Securing Connection' screen still showing"
+          "login page and verification"
         ]
       },
       "acceptanceCriteria": [
-        "`AuthGuard` renders the full-page military-themed loading spinner (matte black background, gold/green accents) when `isInitializing === true`.",
-        "No redirect to `/login` occurs while `isInitializing` is `true`.",
-        "After `isInitializing` settles to `false`, unauthenticated users are redirected to `/login` and authenticated users see their protected content.",
-        "The 'Securing Connection' screen does not appear indefinitely after this fix."
+        "In development mode (`import.meta.env.DEV === true`), `identityProvider` resolves to `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943`",
+        "In production mode, `identityProvider` resolves to `https://identity.ic0.app`",
+        "The Internet Identity popup opens successfully without hanging on 'Securing Connection'",
+        "No hardcoded or unreachable identity provider URL exists in `main.tsx`"
       ]
     },
     {
-      "id": "REQ-44",
-      "text": "Audit `frontend/src/hooks/useActorReady.ts` and enforce that `isActorReady` is `true` only when all three conditions are met in order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. If the hook currently sets `isActorReady` to `true` before `isInitializing` has settled, or before the principal is confirmed non-anonymous, or before the actor is non-null, rewrite it to enforce all three conditions strictly.",
+      "id": "REQ-63",
+      "text": "Restore `frontend/src/hooks/useActorReady.ts` so that `isActorReady` is `true` only when all three conditions are strictly met in order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. The hook must never flip `isActorReady` to `true` prematurely. Export `isActorReady` as a stable boolean.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-4"
         ],
         "quotes": [
-          "Securing Connection' screen still showing"
+          "login page and verification"
         ]
       },
       "acceptanceCriteria": [
-        "`isActorReady` returns `false` while `isInitializing === true`.",
-        "`isActorReady` returns `false` when the principal equals `Principal.anonymous()`.",
-        "`isActorReady` returns `false` when the actor instance is `null` or `undefined`.",
-        "`isActorReady` returns `true` only after all three conditions are simultaneously satisfied.",
-        "No premature `true` value causes dependent queries to fire before the identity is resolved."
+        "`isActorReady` is `false` while `isInitializing` is `true`",
+        "`isActorReady` is `false` when the principal equals `Principal.anonymous()`",
+        "`isActorReady` is `false` when the actor instance is `null`",
+        "`isActorReady` flips to `true` only after all three conditions are simultaneously satisfied",
+        "No premature `true` value causes queries to fire before the actor is ready"
+      ]
+    },
+    {
+      "id": "REQ-64",
+      "text": "Restore `frontend/src/hooks/useQueries.ts` so the `useGetProfile` query: (1) has its `enabled` flag strictly gated on `isActorReady === true`; (2) includes the authenticated principal string in the React Query cache key (e.g. `['profile', principalText]`) so it auto-invalidates when the principal changes; (3) treats a `null` / empty optional returned by the backend as 'profile not found' (new user flow), not as an error; (4) treats only a thrown exception as a genuine fetch failure (`isError`). All other query hooks in the file that call backend functions must also gate their `enabled` flag on `isActorReady`.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "login page and verification"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`useGetProfile` does not fire before `isActorReady` is `true`",
+        "The React Query cache key includes the principal string (e.g. `['profile', principalText]`)",
+        "A `null` response from `getProfile` sets `data` to `null` and does not set `isError` to `true`",
+        "A thrown exception from `getProfile` sets `isError` to `true`",
+        "All other backend-calling queries in `useQueries.ts` are gated on `isActorReady`"
+      ]
+    },
+    {
+      "id": "REQ-65",
+      "text": "Restore `frontend/src/components/ProtectedRoute.tsx` to the strict state machine: (1) While `isActorReady` is `false` OR the profile query `isLoading` is `true` → render a full-page military-themed loading spinner (no redirect, no children rendered). (2) If `isError` is `true` → render a full-page error state with a gold-accented 'Retry' button that calls `refetch()`. (3) If the user is definitively unauthenticated (not logged in AND actor initialization is complete) → redirect to `/login`. (4) If `data` is `null` (profile not found, new user) → render `<ProfileSetupModal>` without redirecting. (5) If profile data is present → render `<Outlet />` / children. The component must never redirect to `/login` during the loading phase.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "login page and verification"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A full-page military-themed loading spinner is shown while `isActorReady` is `false` or profile query is loading",
+        "No redirect to `/login` occurs while loading is in progress",
+        "A 'Retry' button with gold accent is shown when the profile query errors; clicking it calls `refetch()`",
+        "Unauthenticated users are redirected to `/login` only after actor initialization is confirmed complete",
+        "New users (null profile) see `<ProfileSetupModal>` instead of being redirected",
+        "Authenticated users with a profile see the protected page content (`<Outlet />`)"
+      ]
+    },
+    {
+      "id": "REQ-66",
+      "text": "Restore `frontend/src/App.tsx` to the Version 4 routing structure with routes: `/login` (public, LoginPage), `/` (protected, DashboardPage), `/vault` (protected, VaultPage), `/settings` (protected, SettingsPage). The `AuthGuard` component must render only the full-page military-themed loading spinner while `isInitializing` is `true` and must never redirect to `/login` or render protected content until `isInitializing` has definitively settled to `false`.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "login page and verification"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Routes `/login`, `/`, `/vault`, and `/settings` are all defined and functional",
+        "While `isInitializing` is `true`, only the full-page loading spinner is rendered — no routing decision is made",
+        "After `isInitializing` settles to `false`, unauthenticated users are redirected to `/login`",
+        "Authenticated users can access `/`, `/vault`, and `/settings`",
+        "No blank screen or premature redirect occurs during the initialization phase"
+      ]
+    },
+    {
+      "id": "REQ-67",
+      "text": "Restore `frontend/src/components/ProfileSetupModal.tsx` to the Version 4 design: a full-screen modal for new users to register a profile with fields for name, username, optional email, and vault password (SHA-256 hashed client-side before submission). On successful registration, invalidate the `['profile', principalText]` React Query cache key so `ProtectedRoute` immediately transitions from the modal to the dashboard. Style the modal with the military theme (matte black background, gold accents, military-green buttons).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "login page and verification"
+        ]
+      },
+      "acceptanceCriteria": [
+        "New users (null profile) see the ProfileSetupModal after Internet Identity login",
+        "The modal collects name, username, optional email, and vault password",
+        "The vault password is SHA-256 hashed before being sent to the backend",
+        "On successful profile creation, the profile React Query cache is invalidated and the modal closes, revealing the dashboard",
+        "The modal is styled with matte black background, gold accents, and military-green buttons consistent with the military theme"
+      ]
+    },
+    {
+      "id": "REQ-68",
+      "text": "Audit `backend/main.mo` — specifically the `getProfile` function — to confirm it returns `null` (empty optional `?UserProfile`) when no profile exists for the caller principal, and only traps or returns an error for genuine runtime failures. If it currently traps on a missing profile or returns an error variant for 'not found', fix it to return `null` instead. Do not change any other backend logic or data structures.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "login page and verification"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`getProfile` returns `null` (empty optional) when the caller principal has no registered profile",
+        "`getProfile` does not trap or throw for a missing profile",
+        "A genuine runtime error (e.g. storage failure) still results in a trap or error variant as appropriate",
+        "No other backend functions or data structures are modified"
       ]
     }
   ],
   "constraints": [
-    "Do not modify any file listed under frontend.immutablePaths: `frontend/src/hooks/useInternetIdentity.ts`, `frontend/src/hooks/useActor.ts`, `frontend/src/main.tsx`, `frontend/src/components/ui`.",
-    "Do not change any backend logic or data structures.",
-    "Do not alter the military visual theme or any existing UI layout."
+    "Do not modify any files listed in frontend.immutablePaths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui",
+    "All Internet Identity authentication must use the existing useInternetIdentity hook — no third-party auth providers",
+    "Do not change any backend data structures or CRUD logic beyond fixing the getProfile null-return behavior"
   ],
   "nonGoals": [
-    "Adding new features or pages.",
-    "Changing the authentication mechanism away from Internet Identity.",
-    "Modifying backend Motoko actor logic.",
-    "Altering sidebar links or default link URLs."
+    "Adding new authentication methods beyond Internet Identity",
+    "Google Calendar OAuth integration",
+    "Changing the visual theme beyond restoring the Version 4 military palette",
+    "Modifying sidebar links, vault notes, settings sections, or custom link manager behavior",
+    "Adding new pages or routes beyond the four existing ones"
   ],
   "imageRequirements": {
     "required": [],

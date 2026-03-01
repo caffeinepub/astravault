@@ -1,47 +1,96 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T06:04:43.846Z",
+  "generatedAt": "2026-03-01T07:07:50.919Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
+    "total": 8,
+    "implemented": 6,
     "items": [
       {
-        "id": "REQ-42",
-        "summary": "In `frontend/src/main.tsx` (or wherever `InternetIdentityProvider` is instantiated), ensure the `identityProvider` prop is set to the correct URL for the current environment: `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943` when running locally against dfx, and `https://identity.ic0.app` for production. Use `process.env.NODE_ENV`, `import.meta.env.DEV`, or the `DFX_NETWORK` environment variable to select the correct URL at build time. Remove any hardcoded, unreachable, or malformed identity provider URL that could cause the Internet Identity iframe to hang on 'Securing Connection'.",
+        "id": "REQ-61",
+        "summary": "Restore `frontend/src/pages/LoginPage.tsx` to a fully functional, visually complete login page with AstraVault branding: matte black (#0a0a0a) background, gold (#c9a84c / #d4af37) and military-green (#2d4a1e / #3a5c28) accents, shield/command iconography, Rajdhani/Inter fonts, and a single 'Login with Internet Identity' button wired to the `useInternetIdentity` hook's `login` function. Already-authenticated users (identity resolved and non-anonymous) must be automatically redirected to `/`. The page must be accessible at the `/login` route for all unauthenticated users.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/LoginPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/LoginPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-62",
+        "summary": "Ensure `frontend/src/main.tsx` configures the `InternetIdentityProvider` with the correct `identityProvider` URL for each environment: `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943` when `import.meta.env.DEV` is `true`, and `https://identity.ic0.app` for production. Remove any hardcoded, unreachable, or malformed identity provider URL that causes the Internet Identity iframe to hang on 'Securing Connection'. Use `import.meta.env.DEV` or `import.meta.env.VITE_DFX_NETWORK` to select the correct URL at build time.",
         "status": "missing",
         "plannedFiles": [
-          "frontend/src/hooks/useInternetIdentity.ts"
+          "frontend/src/main.tsx"
         ],
         "matchedFiles": []
       },
       {
-        "id": "REQ-43",
-        "summary": "Audit `frontend/src/App.tsx` — specifically the `AuthGuard` component — and ensure it does not make any routing decision (redirect to `/login` or render protected content) while `isInitializing` is `true`. While `isInitializing` is `true`, render only the full-page military-themed loading spinner. Only after `isInitializing` has definitively settled to `false` may the guard redirect unauthenticated users to `/login` or render protected routes.",
+        "id": "REQ-63",
+        "summary": "Restore `frontend/src/hooks/useActorReady.ts` so that `isActorReady` is `true` only when all three conditions are strictly met in order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. The hook must never flip `isActorReady` to `true` prematurely. Export `isActorReady` as a stable boolean.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx",
+          "frontend/src/hooks/useActorReady.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useActorReady.ts"
+        ]
+      },
+      {
+        "id": "REQ-64",
+        "summary": "Restore `frontend/src/hooks/useQueries.ts` so the `useGetProfile` query: (1) has its `enabled` flag strictly gated on `isActorReady === true`; (2) includes the authenticated principal string in the React Query cache key (e.g. `['profile', principalText]`) so it auto-invalidates when the principal changes; (3) treats a `null` / empty optional returned by the backend as 'profile not found' (new user flow), not as an error; (4) treats only a thrown exception as a genuine fetch failure (`isError`). All other query hooks in the file that call backend functions must also gate their `enabled` flag on `isActorReady`.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-65",
+        "summary": "Restore `frontend/src/components/ProtectedRoute.tsx` to the strict state machine: (1) While `isActorReady` is `false` OR the profile query `isLoading` is `true` → render a full-page military-themed loading spinner (no redirect, no children rendered). (2) If `isError` is `true` → render a full-page error state with a gold-accented 'Retry' button that calls `refetch()`. (3) If the user is definitively unauthenticated (not logged in AND actor initialization is complete) → redirect to `/login`. (4) If `data` is `null` (profile not found, new user) → render `<ProfileSetupModal>` without redirecting. (5) If profile data is present → render `<Outlet />` / children. The component must never redirect to `/login` during the loading phase.",
+        "status": "implemented",
+        "plannedFiles": [
           "frontend/src/components/ProtectedRoute.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/App.tsx",
           "frontend/src/components/ProtectedRoute.tsx"
         ]
       },
       {
-        "id": "REQ-44",
-        "summary": "Audit `frontend/src/hooks/useActorReady.ts` and enforce that `isActorReady` is `true` only when all three conditions are met in order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. If the hook currently sets `isActorReady` to `true` before `isInitializing` has settled, or before the principal is confirmed non-anonymous, or before the actor is non-null, rewrite it to enforce all three conditions strictly.",
+        "id": "REQ-66",
+        "summary": "Restore `frontend/src/App.tsx` to the Version 4 routing structure with routes: `/login` (public, LoginPage), `/` (protected, DashboardPage), `/vault` (protected, VaultPage), `/settings` (protected, SettingsPage). The `AuthGuard` component must render only the full-page military-themed loading spinner while `isInitializing` is `true` and must never redirect to `/login` or render protected content until `isInitializing` has definitively settled to `false`.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useActorReady.ts"
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useActorReady.ts"
+          "frontend/src/App.tsx"
         ]
+      },
+      {
+        "id": "REQ-67",
+        "summary": "Restore `frontend/src/components/ProfileSetupModal.tsx` to the Version 4 design: a full-screen modal for new users to register a profile with fields for name, username, optional email, and vault password (SHA-256 hashed client-side before submission). On successful registration, invalidate the `['profile', principalText]` React Query cache key so `ProtectedRoute` immediately transitions from the modal to the dashboard. Style the modal with the military theme (matte black background, gold accents, military-green buttons).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ProfileSetupModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ProfileSetupModal.tsx"
+        ]
+      },
+      {
+        "id": "REQ-68",
+        "summary": "Audit `backend/main.mo` — specifically the `getProfile` function — to confirm it returns `null` (empty optional `?UserProfile`) when no profile exists for the caller principal, and only traps or returns an error for genuine runtime failures. If it currently traps on a missing profile or returns an error variant for 'not found', fix it to return `null` instead. Do not change any other backend logic or data structures.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       }
     ]
   },
@@ -51,8 +100,12 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/App.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
     "frontend/src/components/ProtectedRoute.tsx",
     "frontend/src/hooks/useActorReady.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/pages/SettingsPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

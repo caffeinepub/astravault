@@ -1,62 +1,78 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
+import {
+  createRouter,
+  createRoute,
+  createRootRoute,
+  RouterProvider,
+  Outlet,
+  Navigate,
+} from '@tanstack/react-router';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
+import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import VaultPage from './pages/VaultPage';
 import SettingsPage from './pages/SettingsPage';
-import ProtectedRoute from './components/ProtectedRoute';
+import DashboardLayout from './components/DashboardLayout';
 import { Shield } from 'lucide-react';
 
-// ── Military Loading Spinner ─────────────────────────────────────────────────
-function MilitaryLoader({ message = 'Securing Connection...' }: { message?: string }) {
+// ── Full-page loader ──────────────────────────────────────────────────────────
+function InitializingLoader() {
   return (
-    <div className="min-h-screen bg-surface-darkest flex flex-col items-center justify-center gap-6">
-      <div className="relative">
-        <div className="w-20 h-20 border-4 border-military-green-primary border-t-gold-accent rounded-full animate-spin" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Shield className="w-8 h-8 text-gold-accent" />
+    <div className="min-h-screen bg-surface-darkest flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center gap-6">
+        <div className="relative">
+          <Shield className="w-16 h-16 text-gold-accent opacity-30" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-gold-accent/20 border-t-gold-accent rounded-full animate-spin" />
+          </div>
         </div>
-      </div>
-      <div className="text-center">
-        <p className="text-gold-accent font-rajdhani text-lg font-semibold tracking-widest uppercase">
-          {message}
-        </p>
-        <p className="text-military-green-primary font-rajdhani text-sm tracking-wider mt-1 opacity-70">
-          AstraVault
-        </p>
+        <div className="text-center">
+          <h1 className="font-rajdhani text-2xl font-bold tracking-widest text-gold-accent uppercase">
+            AstraVault
+          </h1>
+          <p className="font-inter text-surface-light/40 text-xs tracking-widest uppercase mt-1">
+            Securing Connection...
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="w-1.5 h-1.5 rounded-full bg-gold-accent/40 animate-pulse"
+              style={{ animationDelay: `${i * 0.2}s` }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Root Layout with Auth Guard ──────────────────────────────────────────────
-// Shows the military loader while Internet Identity is initializing.
-// Uses a "settled" flag so that once initialization completes once, brief
-// re-initializing flashes (caused by the authClient dependency loop in the
-// provider) do not re-show the loader screen.
+// ── Auth guard for root layout ────────────────────────────────────────────────
 function RootLayout() {
   const { isInitializing } = useInternetIdentity();
-  // Once initialization has settled to false at least once, we never block again.
+
+  // Use a ref-based settled flag so brief re-initialization flashes
+  // from the authClient dependency loop don't re-show the loader.
   const hasSettledRef = useRef(false);
-  const [settled, setSettled] = useState(false);
+  const [hasSettled, setHasSettled] = useState(false);
 
   useEffect(() => {
     if (!isInitializing && !hasSettledRef.current) {
       hasSettledRef.current = true;
-      setSettled(true);
+      setHasSettled(true);
     }
   }, [isInitializing]);
 
-  // Only show the loader on the very first initialization pass.
-  if (!settled && isInitializing) {
-    return <MilitaryLoader message="Securing Connection..." />;
+  if (!hasSettled) {
+    return <InitializingLoader />;
   }
 
   return <Outlet />;
 }
 
-// ── Route Tree ───────────────────────────────────────────────────────────────
+// ── Routes ────────────────────────────────────────────────────────────────────
 const rootRoute = createRootRoute({
   component: RootLayout,
 });
@@ -67,38 +83,44 @@ const loginRoute = createRoute({
   component: LoginPage,
 });
 
-// ProtectedRoute is a layout component that uses <Outlet /> internally.
-// It handles its own auth checks, profile loading, and profile setup modal.
-const protectedLayoutRoute = createRoute({
+const protectedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'protected',
   component: ProtectedRoute,
 });
 
-const dashboardRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
+const dashboardLayoutRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  id: 'dashboard-layout',
+  component: DashboardLayout,
+});
+
+const indexRoute = createRoute({
+  getParentRoute: () => dashboardLayoutRoute,
   path: '/',
   component: DashboardPage,
 });
 
 const vaultRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
+  getParentRoute: () => dashboardLayoutRoute,
   path: '/vault',
   component: VaultPage,
 });
 
 const settingsRoute = createRoute({
-  getParentRoute: () => protectedLayoutRoute,
+  getParentRoute: () => dashboardLayoutRoute,
   path: '/settings',
   component: SettingsPage,
 });
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  protectedLayoutRoute.addChildren([
-    dashboardRoute,
-    vaultRoute,
-    settingsRoute,
+  protectedRoute.addChildren([
+    dashboardLayoutRoute.addChildren([
+      indexRoute,
+      vaultRoute,
+      settingsRoute,
+    ]),
   ]),
 ]);
 
@@ -110,7 +132,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// ── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   return <RouterProvider router={router} />;
 }

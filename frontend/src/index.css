@@ -6,78 +6,73 @@
 
 @layer base {
   :root {
-    /* Military theme - light mode (still dark-ish) */
-    --background: oklch(0.12 0.01 120);
-    --foreground: oklch(0.90 0.02 80);
+    --background: oklch(0.08 0 0);
+    --foreground: oklch(0.92 0.01 90);
 
-    --card: oklch(0.15 0.01 120);
-    --card-foreground: oklch(0.90 0.02 80);
+    --card: oklch(0.11 0 0);
+    --card-foreground: oklch(0.92 0.01 90);
 
-    --popover: oklch(0.15 0.01 120);
-    --popover-foreground: oklch(0.90 0.02 80);
+    --popover: oklch(0.11 0 0);
+    --popover-foreground: oklch(0.92 0.01 90);
 
-    --primary: oklch(0.35 0.08 140);
-    --primary-foreground: oklch(0.90 0.08 80);
+    --primary: oklch(0.55 0.12 140);
+    --primary-foreground: oklch(0.98 0 0);
 
-    --secondary: oklch(0.20 0.02 120);
-    --secondary-foreground: oklch(0.80 0.02 80);
+    --secondary: oklch(0.15 0 0);
+    --secondary-foreground: oklch(0.92 0.01 90);
 
-    --muted: oklch(0.20 0.01 120);
-    --muted-foreground: oklch(0.55 0.02 80);
+    --muted: oklch(0.15 0 0);
+    --muted-foreground: oklch(0.55 0.01 90);
 
-    --accent: oklch(0.65 0.12 80);
-    --accent-foreground: oklch(0.10 0.01 120);
+    --accent: oklch(0.72 0.12 75);
+    --accent-foreground: oklch(0.08 0 0);
 
-    --destructive: oklch(0.50 0.20 25);
-    --destructive-foreground: oklch(0.95 0.01 80);
+    --destructive: oklch(0.55 0.22 25);
+    --destructive-foreground: oklch(0.98 0 0);
 
-    --border: oklch(0.30 0.04 140);
-    --input: oklch(0.20 0.02 120);
-    --ring: oklch(0.65 0.12 80);
+    --border: oklch(0.22 0.02 140);
+    --input: oklch(0.18 0.01 140);
+    --ring: oklch(0.72 0.12 75);
 
     --radius: 0px;
 
-    /* Custom military tokens */
-    --gold-accent: oklch(0.72 0.12 80);
-    --gold-highlight: oklch(0.78 0.14 82);
-    --military-green-primary: oklch(0.28 0.08 140);
-    --military-green-accent: oklch(0.38 0.10 140);
-    --surface-darkest: oklch(0.10 0.01 120);
-    --surface-dark: oklch(0.14 0.01 120);
+    /* Military theme custom tokens */
+    --color-surface-darkest: #0a0a0a;
+    --color-surface-dark: #111111;
+    --color-surface-mid: #1a1a1a;
+    --color-military-green-primary: #2d4a1e;
+    --color-military-green-light: #3a5c28;
+    --color-military-green-muted: #1e3214;
+    --color-gold-accent: #c9a84c;
+    --color-gold-bright: #d4af37;
+    --color-gold-muted: #a8893e;
+    --color-text-primary: #e8e4d9;
+    --color-text-secondary: #a09880;
+    --color-text-muted: #6b6355;
   }
 
   .dark {
-    --background: oklch(0.10 0.01 120);
-    --foreground: oklch(0.90 0.02 80);
-
-    --card: oklch(0.14 0.01 120);
-    --card-foreground: oklch(0.90 0.02 80);
-
-    --popover: oklch(0.14 0.01 120);
-    --popover-foreground: oklch(0.90 0.02 80);
-
-    --primary: oklch(0.35 0.08 140);
-    --primary-foreground: oklch(0.90 0.08 80);
-
-    --secondary: oklch(0.18 0.02 120);
-    --secondary-foreground: oklch(0.80 0.02 80);
-
-    --muted: oklch(0.18 0.01 120);
-    --muted-foreground: oklch(0.55 0.02 80);
-
-    --accent: oklch(0.65 0.12 80);
-    --accent-foreground: oklch(0.10 0.01 120);
-
-    --destructive: oklch(0.50 0.20 25);
-    --destructive-foreground: oklch(0.95 0.01 80);
-
-    --border: oklch(0.28 0.04 140);
-    --input: oklch(0.18 0.02 120);
-    --ring: oklch(0.65 0.12 80);
+    --background: oklch(0.08 0 0);
+    --foreground: oklch(0.92 0.01 90);
+    --card: oklch(0.11 0 0);
+    --card-foreground: oklch(0.92 0.01 90);
+    --popover: oklch(0.11 0 0);
+    --popover-foreground: oklch(0.92 0.01 90);
+    --primary: oklch(0.55 0.12 140);
+    --primary-foreground: oklch(0.98 0 0);
+    --secondary: oklch(0.15 0 0);
+    --secondary-foreground: oklch(0.92 0.01 90);
+    --muted: oklch(0.15 0 0);
+    --muted-foreground: oklch(0.55 0.01 90);
+    --accent: oklch(0.72 0.12 75);
+    --accent-foreground: oklch(0.08 0 0);
+    --destructive: oklch(0.55 0.22 25);
+    --destructive-foreground: oklch(0.98 0 0);
+    --border: oklch(0.22 0.02 140);
+    --input: oklch(0.18 0.01 140);
+    --ring: oklch(0.72 0.12 75);
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -85,10 +80,14 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
+    background-color: var(--color-surface-darkest);
+    color: var(--color-text-primary);
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.05em;
   }
 }
 
@@ -97,39 +96,85 @@
     font-family: 'Rajdhani', sans-serif;
   }
 
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .text-gold {
+    color: var(--color-gold-accent);
+  }
+
+  .text-gold-bright {
+    color: var(--color-gold-bright);
+  }
+
+  .text-military-green {
+    color: var(--color-military-green-light);
+  }
+
   .bg-surface-darkest {
-    background-color: var(--surface-darkest);
+    background-color: var(--color-surface-darkest);
   }
 
   .bg-surface-dark {
-    background-color: var(--surface-dark);
+    background-color: var(--color-surface-dark);
   }
 
-  .text-gold-accent {
-    color: var(--gold-accent);
+  .bg-surface-mid {
+    background-color: var(--color-surface-mid);
   }
 
-  .text-gold-highlight {
-    color: var(--gold-highlight);
+  .bg-military-green {
+    background-color: var(--color-military-green-primary);
   }
 
-  .text-military-green-accent {
-    color: var(--military-green-accent);
+  .border-gold {
+    border-color: var(--color-gold-accent);
   }
 
-  .border-gold-accent {
-    border-color: var(--gold-accent);
+  .border-military-green {
+    border-color: var(--color-military-green-primary);
   }
 
-  .border-military-green-accent {
-    border-color: var(--military-green-accent);
+  .military-card {
+    background-color: var(--color-surface-dark);
+    border: 1px solid var(--color-military-green-primary);
   }
 
-  .bg-military-green-primary {
-    background-color: var(--military-green-primary);
+  .military-input {
+    background-color: var(--color-surface-mid);
+    border: 1px solid var(--color-military-green-primary);
+    color: var(--color-text-primary);
   }
 
-  .bg-military-green-accent {
-    background-color: var(--military-green-accent);
+  .military-input:focus {
+    border-color: var(--color-gold-accent);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-gold-accent);
+  }
+
+  .gold-button {
+    background-color: var(--color-gold-accent);
+    color: var(--color-surface-darkest);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .gold-button:hover {
+    background-color: var(--color-gold-bright);
+  }
+
+  .military-green-button {
+    background-color: var(--color-military-green-primary);
+    color: var(--color-text-primary);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .military-green-button:hover {
+    background-color: var(--color-military-green-light);
   }
 }

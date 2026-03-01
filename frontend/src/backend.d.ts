@@ -44,17 +44,14 @@ export interface backendInterface {
     deleteVaultNote(noteId: bigint): Promise<void>;
     editCustomLink(linkId: bigint, name: string, url: string, category: string, iconName: string): Promise<void>;
     editVaultNote(noteId: bigint, encryptedContent: string): Promise<void>;
-    getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCustomLinks(): Promise<Array<CustomLink>>;
     getProfile(): Promise<UserProfile | null>;
-    getUserProfile(user: Principal): Promise<UserProfile | null>;
     getVaultNotes(): Promise<Array<VaultNote>>;
     isCallerAdmin(): Promise<boolean>;
     isEmail2faEnabled(): Promise<boolean>;
     registerUser(name: string, username: string, email: string | null, vaultPasswordHash: string): Promise<void>;
     resetVaultPassword(newPasswordHash: string): Promise<void>;
-    saveCallerUserProfile(profile: UserProfile): Promise<void>;
     toggleEmail2fa(enable: boolean): Promise<void>;
     updateUserProfile(name: string, username: string, email: string | null, vaultPasswordHash: string | null): Promise<void>;
 }

@@ -1,190 +1,214 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import { Plus, Edit2, Trash2, ExternalLink, AlertCircle } from 'lucide-react';
-import { useGetCustomLinks, useAddCustomLink, useEditCustomLink, useDeleteCustomLink } from '../hooks/useQueries';
-import { iconMap, ALL_CATEGORIES } from '../data/defaultLinks';
+import { useState } from 'react';
+import { useAddCustomLink, useEditCustomLink, useDeleteCustomLink, useGetCustomLinks } from '../hooks/useQueries';
+import { defaultLinkCategories, iconMap } from '../data/defaultLinks';
 import IconPicker from './IconPicker';
+import { Plus, Edit2, Trash2, X, ExternalLink } from 'lucide-react';
 import type { CustomLink } from '../backend';
 
 interface CustomLinkManagerProps {
   onClose: () => void;
 }
 
-interface LinkForm {
-  name: string;
-  url: string;
-  category: string;
-  iconName: string;
-  customCategory: string;
-}
-
-const emptyForm: LinkForm = {
-  name: '',
-  url: '',
-  category: ALL_CATEGORIES[0],
-  iconName: 'Building2',
-  customCategory: '',
-};
+type Mode = 'list' | 'add' | 'edit';
 
 export default function CustomLinkManager({ onClose }: CustomLinkManagerProps) {
-  const { data: customLinks = [], isLoading } = useGetCustomLinks();
+  const { data: customLinks = [] } = useGetCustomLinks();
   const addLink = useAddCustomLink();
   const editLink = useEditCustomLink();
   const deleteLink = useDeleteCustomLink();
 
-  const [view, setView] = useState<'list' | 'form'>('list');
+  const [mode, setMode] = useState<Mode>('list');
   const [editingLink, setEditingLink] = useState<CustomLink | null>(null);
-  const [form, setForm] = useState<LinkForm>(emptyForm);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [name, setName] = useState('');
+  const [url, setUrl] = useState('');
+  const [category, setCategory] = useState(defaultLinkCategories[0]?.id ?? 'BANK');
+  const [customCategory, setCustomCategory] = useState('');
+  const [iconName, setIconName] = useState('Globe');
   const [useCustomCategory, setUseCustomCategory] = useState(false);
+  const [error, setError] = useState('');
 
-  const openAddForm = () => {
-    setEditingLink(null);
-    setForm(emptyForm);
-    setErrors({});
+  const resetForm = () => {
+    setName('');
+    setUrl('');
+    setCategory(defaultLinkCategories[0]?.id ?? 'BANK');
+    setCustomCategory('');
+    setIconName('Globe');
     setUseCustomCategory(false);
-    setView('form');
+    setError('');
   };
 
-  const openEditForm = (link: CustomLink) => {
+  const openAdd = () => {
+    resetForm();
+    setMode('add');
+  };
+
+  const openEdit = (link: CustomLink) => {
     setEditingLink(link);
-    const isCustomCat = !ALL_CATEGORIES.includes(link.category);
-    setUseCustomCategory(isCustomCat);
-    setForm({
-      name: link.name,
-      url: link.url,
-      category: isCustomCat ? 'CUSTOM' : link.category,
-      iconName: link.iconName,
-      customCategory: isCustomCat ? link.category : '',
-    });
-    setErrors({});
-    setView('form');
-  };
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!form.name.trim()) newErrors.name = 'Name is required';
-    if (!form.url.trim()) newErrors.url = 'URL is required';
-    else {
-      try { new URL(form.url.startsWith('http') ? form.url : `https://${form.url}`); }
-      catch { newErrors.url = 'Enter a valid URL'; }
+    setName(link.name);
+    setUrl(link.url);
+    const isDefault = defaultLinkCategories.some((c) => c.id === link.category);
+    if (isDefault) {
+      setCategory(link.category);
+      setUseCustomCategory(false);
+    } else {
+      setCustomCategory(link.category);
+      setUseCustomCategory(true);
     }
-    if (useCustomCategory && !form.customCategory.trim()) newErrors.category = 'Category name is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setIconName(link.iconName);
+    setError('');
+    setMode('edit');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    setError('');
 
-    const finalUrl = form.url.startsWith('http') ? form.url : `https://${form.url}`;
-    const finalCategory = useCustomCategory ? form.customCategory.trim().toUpperCase() : form.category;
+    if (!name.trim()) { setError('Name is required'); return; }
+    if (!url.trim()) { setError('URL is required'); return; }
+
+    const finalCategory = useCustomCategory ? customCategory.trim() : category;
+    if (!finalCategory) { setError('Category is required'); return; }
 
     try {
-      if (editingLink) {
-        await editLink.mutateAsync({
-          id: editingLink.id,
-          name: form.name.trim(),
-          url: finalUrl,
-          category: finalCategory,
-          iconName: form.iconName,
-        });
-      } else {
-        await addLink.mutateAsync({
-          name: form.name.trim(),
-          url: finalUrl,
-          category: finalCategory,
-          iconName: form.iconName,
-        });
+      if (mode === 'add') {
+        await addLink.mutateAsync({ name: name.trim(), url: url.trim(), category: finalCategory, iconName });
+      } else if (mode === 'edit' && editingLink) {
+        await editLink.mutateAsync({ id: editingLink.id, name: name.trim(), url: url.trim(), category: finalCategory, iconName });
       }
-      setView('list');
-    } catch (err) {
-      setErrors({ submit: err instanceof Error ? err.message : 'Failed to save link' });
+      setMode('list');
+      resetForm();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Operation failed');
     }
   };
 
-  const handleDelete = async (linkId: bigint) => {
+  const handleDelete = async (link: CustomLink) => {
+    if (!confirm(`Delete "${link.name}"?`)) return;
     try {
-      await deleteLink.mutateAsync(linkId);
-    } catch (err) {
-      console.error('Delete link error:', err);
+      await deleteLink.mutateAsync(link.id);
+    } catch (err: unknown) {
+      console.error('Delete failed:', err);
     }
   };
 
-  const isPending = addLink.isPending || editLink.isPending;
+  const allCategories = defaultLinkCategories.map((c) => ({ id: c.id, label: c.label }));
 
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="bg-surface-dark border border-military-green-accent/40 max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="font-rajdhani text-xl text-gold-accent tracking-wide uppercase flex items-center gap-2">
-            {view === 'list' ? (
-              <><Plus className="w-5 h-5" /> Manage Custom Links</>
-            ) : (
-              <><Edit2 className="w-5 h-5" /> {editingLink ? 'Edit Link' : 'Add New Link'}</>
-            )}
-          </DialogTitle>
-          <DialogDescription className="text-gray-400 text-xs">
-            {view === 'list' ? 'Add, edit, or remove your custom quick-access links.' : 'Fill in the details for your custom link.'}
-          </DialogDescription>
-        </DialogHeader>
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
+    >
+      <div
+        className="w-full max-w-lg max-h-[90vh] flex flex-col"
+        style={{
+          backgroundColor: 'var(--color-surface-dark)',
+          border: '1px solid var(--color-military-green-primary)',
+          boxShadow: '0 4px 32px rgba(0,0,0,0.9)',
+        }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: '1px solid var(--color-military-green-primary)' }}
+        >
+          <h2
+            className="font-rajdhani text-lg font-bold tracking-widest uppercase"
+            style={{ color: 'var(--color-gold-accent)' }}
+          >
+            {mode === 'list' ? 'Custom Links' : mode === 'add' ? 'Add Link' : 'Edit Link'}
+          </h2>
+          <button
+            onClick={onClose}
+            style={{ color: 'var(--color-text-muted)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-gold-accent)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+          >
+            <X size={18} />
+          </button>
+        </div>
 
-        {view === 'list' ? (
-          <div className="flex flex-col gap-3 overflow-hidden">
-            <button
-              onClick={openAddForm}
-              className="flex items-center gap-2 w-full bg-military-green-primary hover:bg-military-green-accent text-gold-accent border border-military-green-accent/40 px-4 py-2.5 text-sm font-rajdhani font-semibold tracking-wider uppercase transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              Add New Link
-            </button>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {mode === 'list' && (
+            <div className="space-y-3">
+              <button
+                onClick={openAdd}
+                className="w-full flex items-center justify-center gap-2 py-2.5 font-rajdhani font-bold tracking-widest uppercase text-sm transition-all"
+                style={{
+                  border: '1px dashed var(--color-gold-accent)',
+                  color: 'var(--color-gold-accent)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(201,168,76,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <Plus size={16} />
+                Add New Link
+              </button>
 
-            <div className="overflow-y-auto flex-1 space-y-2 pr-1">
-              {isLoading ? (
-                <p className="text-gray-400 text-sm text-center py-4">Loading...</p>
-              ) : customLinks.length === 0 ? (
-                <div className="text-center py-8">
-                  <ExternalLink className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                  <p className="text-gray-400 text-sm">No custom links yet</p>
-                </div>
+              {customLinks.length === 0 ? (
+                <p className="text-center font-inter text-sm py-6" style={{ color: 'var(--color-text-muted)' }}>
+                  No custom links yet. Add your first link above.
+                </p>
               ) : (
-                customLinks.map(link => {
-                  const Icon = iconMap[link.iconName] || ExternalLink;
+                customLinks.map((link) => {
+                  const Icon = iconMap[link.iconName] ?? iconMap['Globe'];
                   return (
                     <div
-                      key={link.id.toString()}
-                      className="flex items-center gap-3 bg-surface-darkest border border-military-green-accent/20 px-3 py-2.5 group"
+                      key={String(link.id)}
+                      className="flex items-center gap-3 px-3 py-2.5"
+                      style={{
+                        backgroundColor: 'var(--color-surface-mid)',
+                        border: '1px solid var(--color-military-green-muted)',
+                      }}
                     >
-                      <div className="w-8 h-8 bg-military-green-primary border border-military-green-accent/40 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 text-gold-accent" />
+                      <div
+                        className="w-8 h-8 flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: 'var(--color-military-green-muted)' }}
+                      >
+                        {Icon && <Icon size={16} style={{ color: 'var(--color-gold-accent)' }} />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-200 truncate">{link.name}</p>
-                        <p className="text-xs text-gray-500 truncate">{link.url}</p>
+                        <p className="font-inter text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
+                          {link.name}
+                        </p>
+                        <p className="font-inter text-xs truncate" style={{ color: 'var(--color-text-muted)' }}>
+                          {link.url}
+                        </p>
                       </div>
-                      <span className="text-xs text-military-green-accent bg-military-green-primary/40 px-2 py-0.5 font-rajdhani tracking-wider">
-                        {link.category}
-                      </span>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEditForm(link)}
-                          className="p-1.5 text-gray-500 hover:text-gold-accent transition-colors"
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 transition-colors"
+                          style={{ color: 'var(--color-text-muted)' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-gold-accent)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <ExternalLink size={14} />
+                        </a>
+                        <button
+                          onClick={() => openEdit(link)}
+                          className="p-1.5 transition-colors"
+                          style={{ color: 'var(--color-text-muted)' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-military-green-light)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                        >
+                          <Edit2 size={14} />
                         </button>
                         <button
-                          onClick={() => handleDelete(link.id)}
-                          disabled={deleteLink.isPending}
-                          className="p-1.5 text-gray-500 hover:text-red-400 transition-colors"
+                          onClick={() => handleDelete(link)}
+                          className="p-1.5 transition-colors"
+                          style={{ color: 'var(--color-text-muted)' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#f87171')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </div>
@@ -192,102 +216,124 @@ export default function CustomLinkManager({ onClose }: CustomLinkManagerProps) {
                 })
               )}
             </div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-1">
-            {/* Name */}
-            <div>
-              <label className="block text-xs font-rajdhani tracking-widest uppercase text-military-green-accent mb-1.5">Name</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. My Bank"
-                className="w-full bg-surface-darkest border border-military-green-accent/40 text-gray-200 px-3 py-2 text-sm font-rajdhani focus:outline-none focus:border-gold-accent/60 placeholder-gray-600"
-              />
-              {errors.name && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.name}</p>}
-            </div>
+          )}
 
-            {/* URL */}
-            <div>
-              <label className="block text-xs font-rajdhani tracking-widest uppercase text-military-green-accent mb-1.5">URL</label>
-              <input
-                type="text"
-                value={form.url}
-                onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
-                placeholder="https://example.com"
-                className="w-full bg-surface-darkest border border-military-green-accent/40 text-gray-200 px-3 py-2 text-sm font-rajdhani focus:outline-none focus:border-gold-accent/60 placeholder-gray-600"
-              />
-              {errors.url && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.url}</p>}
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-xs font-rajdhani tracking-widest uppercase text-military-green-accent mb-1.5">Category</label>
-              <select
-                value={useCustomCategory ? 'CUSTOM' : form.category}
-                onChange={e => {
-                  if (e.target.value === 'CUSTOM') {
-                    setUseCustomCategory(true);
-                    setForm(f => ({ ...f, category: 'CUSTOM' }));
-                  } else {
-                    setUseCustomCategory(false);
-                    setForm(f => ({ ...f, category: e.target.value }));
-                  }
-                }}
-                className="w-full bg-surface-darkest border border-military-green-accent/40 text-gray-200 px-3 py-2 text-sm font-rajdhani focus:outline-none focus:border-gold-accent/60"
-              >
-                {ALL_CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-                <option value="CUSTOM">+ New Category</option>
-              </select>
-              {useCustomCategory && (
+          {(mode === 'add' || mode === 'edit') && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block font-rajdhani text-xs font-semibold tracking-widest uppercase mb-1" style={{ color: 'var(--color-military-green-light)' }}>
+                  Name *
+                </label>
                 <input
                   type="text"
-                  value={form.customCategory}
-                  onChange={e => setForm(f => ({ ...f, customCategory: e.target.value }))}
-                  placeholder="Enter category name"
-                  className="w-full mt-2 bg-surface-darkest border border-military-green-accent/40 text-gray-200 px-3 py-2 text-sm font-rajdhani focus:outline-none focus:border-gold-accent/60 placeholder-gray-600"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Link name"
+                  className="w-full px-3 py-2 font-inter text-sm military-input"
+                  required
                 />
-              )}
-              {errors.category && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.category}</p>}
-            </div>
-
-            {/* Icon Picker */}
-            <div>
-              <label className="block text-xs font-rajdhani tracking-widest uppercase text-military-green-accent mb-1.5">
-                Icon — <span className="text-gold-accent normal-case">{form.iconName}</span>
-              </label>
-              <IconPicker selected={form.iconName} onSelect={iconName => setForm(f => ({ ...f, iconName }))} />
-            </div>
-
-            {errors.submit && (
-              <div className="border border-red-500/40 bg-red-900/20 p-3 text-red-400 text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {errors.submit}
               </div>
-            )}
 
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setView('list')}
-                className="flex-1 bg-surface-darkest border border-military-green-accent/30 text-gray-400 hover:text-gold-accent font-rajdhani tracking-wider uppercase py-2.5 text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isPending}
-                className="flex-1 bg-military-green-primary border border-gold-accent/60 text-gold-accent font-rajdhani tracking-wider uppercase py-2.5 text-sm transition-all hover:bg-military-green-accent disabled:opacity-50"
-              >
-                {isPending ? 'Saving...' : editingLink ? 'Update Link' : 'Add Link'}
-              </button>
-            </div>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+              <div>
+                <label className="block font-rajdhani text-xs font-semibold tracking-widest uppercase mb-1" style={{ color: 'var(--color-military-green-light)' }}>
+                  URL *
+                </label>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="w-full px-3 py-2 font-inter text-sm military-input"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-rajdhani text-xs font-semibold tracking-widest uppercase mb-1" style={{ color: 'var(--color-military-green-light)' }}>
+                  Category *
+                </label>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="flex items-center gap-1.5 font-inter text-xs cursor-pointer" style={{ color: 'var(--color-text-secondary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={useCustomCategory}
+                      onChange={(e) => setUseCustomCategory(e.target.checked)}
+                      className="accent-gold-accent"
+                    />
+                    Custom category
+                  </label>
+                </div>
+                {useCustomCategory ? (
+                  <input
+                    type="text"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    placeholder="Enter custom category"
+                    className="w-full px-3 py-2 font-inter text-sm military-input"
+                  />
+                ) : (
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3 py-2 font-inter text-sm military-input"
+                  >
+                    {allCategories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-rajdhani text-xs font-semibold tracking-widest uppercase mb-1" style={{ color: 'var(--color-military-green-light)' }}>
+                  Icon
+                </label>
+                <IconPicker selected={iconName} onSelect={setIconName} />
+              </div>
+
+              {error && (
+                <div
+                  className="px-3 py-2 font-inter text-sm"
+                  style={{
+                    backgroundColor: 'rgba(180,40,40,0.15)',
+                    border: '1px solid rgba(180,40,40,0.4)',
+                    color: '#f87171',
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setMode('list'); resetForm(); }}
+                  className="flex-1 py-2.5 font-rajdhani font-semibold tracking-wider uppercase text-sm transition-all"
+                  style={{
+                    border: '1px solid var(--color-military-green-primary)',
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addLink.isPending || editLink.isPending}
+                  className="flex-1 py-2.5 font-rajdhani font-bold tracking-wider uppercase text-sm transition-all disabled:opacity-50"
+                  style={{
+                    backgroundColor: 'var(--color-gold-accent)',
+                    color: 'var(--color-surface-darkest)',
+                  }}
+                >
+                  {addLink.isPending || editLink.isPending ? 'Saving...' : mode === 'add' ? 'Add Link' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

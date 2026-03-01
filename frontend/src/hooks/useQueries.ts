@@ -1,52 +1,109 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useActorReady } from './useActorReady';
-import { useInternetIdentity } from './useInternetIdentity';
 import type { UserProfile, CustomLink, VaultNote } from '../backend';
 
 // ── Profile ──────────────────────────────────────────────────────────────────
 
-export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
-  const isActorReady = useActorReady();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
+export function useGetProfile() {
+  const { actor } = useActor();
+  const { isActorReady, principalText } = useActorReady();
 
-  const query = useQuery<UserProfile | null>({
-    queryKey: ['currentUserProfile', principalText],
+  return useQuery<UserProfile | null>({
+    queryKey: ['profile', principalText],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      const result = await actor.getCallerUserProfile();
-      return result ?? null;
+      if (!actor) return null;
+      try {
+        const result = await actor.getProfile();
+        return result ?? null;
+      } catch (err) {
+        throw err;
+      }
     },
     enabled: isActorReady,
     retry: false,
   });
-
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
-  };
 }
 
-// Alias for backward compatibility
-export function useGetProfile() {
-  return useGetCallerUserProfile();
+export function useRegisterUser() {
+  const { actor } = useActor();
+  const { principalText } = useActorReady();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      name,
+      username,
+      email,
+      vaultPasswordHash,
+    }: {
+      name: string;
+      username: string;
+      email: string | null;
+      vaultPasswordHash: string;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.registerUser(name, username, email, vaultPasswordHash);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', principalText] });
+    },
+  });
+}
+
+export function useUpdateUserProfile() {
+  const { actor } = useActor();
+  const { principalText } = useActorReady();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      name,
+      username,
+      email,
+      vaultPasswordHash,
+    }: {
+      name: string;
+      username: string;
+      email: string | null;
+      vaultPasswordHash: string | null;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.updateUserProfile(name, username, email, vaultPasswordHash);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', principalText] });
+    },
+  });
+}
+
+export function useDeleteAccount() {
+  const { actor } = useActor();
+  const { principalText } = useActorReady();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      await actor.deleteAccount();
+    },
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ['profile', principalText] });
+      queryClient.clear();
+    },
+  });
 }
 
 // ── Custom Links ─────────────────────────────────────────────────────────────
 
 export function useGetCustomLinks() {
   const { actor } = useActor();
-  const isActorReady = useActorReady();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
+  const { isActorReady, principalText } = useActorReady();
 
   return useQuery<CustomLink[]>({
     queryKey: ['customLinks', principalText],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) return [];
       return actor.getCustomLinks();
     },
     enabled: isActorReady,
@@ -55,14 +112,23 @@ export function useGetCustomLinks() {
 
 export function useAddCustomLink() {
   const { actor } = useActor();
+  const { principalText } = useActorReady();
   const queryClient = useQueryClient();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
 
   return useMutation({
-    mutationFn: async (link: { name: string; url: string; category: string; iconName: string }) => {
+    mutationFn: async ({
+      name,
+      url,
+      category,
+      iconName,
+    }: {
+      name: string;
+      url: string;
+      category: string;
+      iconName: string;
+    }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.addCustomLink(link.name, link.url, link.category, link.iconName);
+      return actor.addCustomLink(name, url, category, iconName);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customLinks', principalText] });
@@ -72,14 +138,25 @@ export function useAddCustomLink() {
 
 export function useEditCustomLink() {
   const { actor } = useActor();
+  const { principalText } = useActorReady();
   const queryClient = useQueryClient();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
 
   return useMutation({
-    mutationFn: async (link: { id: bigint; name: string; url: string; category: string; iconName: string }) => {
+    mutationFn: async ({
+      id,
+      name,
+      url,
+      category,
+      iconName,
+    }: {
+      id: bigint;
+      name: string;
+      url: string;
+      category: string;
+      iconName: string;
+    }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.editCustomLink(link.id, link.name, link.url, link.category, link.iconName);
+      await actor.editCustomLink(id, name, url, category, iconName);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customLinks', principalText] });
@@ -89,14 +166,13 @@ export function useEditCustomLink() {
 
 export function useDeleteCustomLink() {
   const { actor } = useActor();
+  const { principalText } = useActorReady();
   const queryClient = useQueryClient();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
 
   return useMutation({
     mutationFn: async (linkId: bigint) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteCustomLink(linkId);
+      await actor.deleteCustomLink(linkId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customLinks', principalText] });
@@ -108,14 +184,12 @@ export function useDeleteCustomLink() {
 
 export function useGetVaultNotes() {
   const { actor } = useActor();
-  const isActorReady = useActorReady();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
+  const { isActorReady, principalText } = useActorReady();
 
   return useQuery<VaultNote[]>({
     queryKey: ['vaultNotes', principalText],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) return [];
       return actor.getVaultNotes();
     },
     enabled: isActorReady,
@@ -124,9 +198,8 @@ export function useGetVaultNotes() {
 
 export function useAddVaultNote() {
   const { actor } = useActor();
+  const { principalText } = useActorReady();
   const queryClient = useQueryClient();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
 
   return useMutation({
     mutationFn: async (encryptedContent: string) => {
@@ -141,14 +214,19 @@ export function useAddVaultNote() {
 
 export function useEditVaultNote() {
   const { actor } = useActor();
+  const { principalText } = useActorReady();
   const queryClient = useQueryClient();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
 
   return useMutation({
-    mutationFn: async (note: { id: bigint; encryptedContent: string }) => {
+    mutationFn: async ({
+      id,
+      encryptedContent,
+    }: {
+      id: bigint;
+      encryptedContent: string;
+    }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.editVaultNote(note.id, note.encryptedContent);
+      await actor.editVaultNote(id, encryptedContent);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vaultNotes', principalText] });
@@ -158,14 +236,13 @@ export function useEditVaultNote() {
 
 export function useDeleteVaultNote() {
   const { actor } = useActor();
+  const { principalText } = useActorReady();
   const queryClient = useQueryClient();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
 
   return useMutation({
     mutationFn: async (noteId: bigint) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteVaultNote(noteId);
+      await actor.deleteVaultNote(noteId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vaultNotes', principalText] });
@@ -173,37 +250,21 @@ export function useDeleteVaultNote() {
   });
 }
 
-// ── Profile Update ───────────────────────────────────────────────────────────
-
-export function useUpdateUserProfile() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
-
-  return useMutation({
-    mutationFn: async (profile: {
-      name: string;
-      username: string;
-      email: string | null;
-      vaultPasswordHash: string | null;
-    }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.updateUserProfile(profile.name, profile.username, profile.email, profile.vaultPasswordHash);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile', principalText] });
-    },
-  });
-}
+// ── Vault Password ────────────────────────────────────────────────────────────
 
 export function useChangeVaultPassword() {
   const { actor } = useActor();
 
   return useMutation({
-    mutationFn: async (passwords: { currentHash: string; newHash: string }) => {
+    mutationFn: async ({
+      currentPasswordHash,
+      newPasswordHash,
+    }: {
+      currentPasswordHash: string;
+      newPasswordHash: string;
+    }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.changeVaultPassword(passwords.currentHash, passwords.newHash);
+      await actor.changeVaultPassword(currentPasswordHash, newPasswordHash);
     },
   });
 }
@@ -212,73 +273,41 @@ export function useResetVaultPassword() {
   const { actor } = useActor();
 
   return useMutation({
-    mutationFn: async (newHash: string) => {
+    mutationFn: async (newPasswordHash: string) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.resetVaultPassword(newHash);
+      await actor.resetVaultPassword(newPasswordHash);
     },
   });
 }
 
-export function useToggleEmail2fa() {
-  const { actor } = useActor();
-
-  return useMutation({
-    mutationFn: async (enable: boolean) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.toggleEmail2fa(enable);
-    },
-  });
-}
+// ── Email 2FA ─────────────────────────────────────────────────────────────────
 
 export function useIsEmail2faEnabled() {
   const { actor } = useActor();
-  const isActorReady = useActorReady();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
+  const { isActorReady, principalText } = useActorReady();
 
   return useQuery<boolean>({
     queryKey: ['email2fa', principalText],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) return false;
       return actor.isEmail2faEnabled();
     },
     enabled: isActorReady,
   });
 }
 
-export function useDeleteAccount() {
+export function useToggleEmail2fa() {
   const { actor } = useActor();
+  const { principalText } = useActorReady();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (enable: boolean) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.deleteAccount();
+      await actor.toggleEmail2fa(enable);
     },
     onSuccess: () => {
-      queryClient.clear();
-    },
-  });
-}
-
-export function useRegisterUser() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-  const { identity } = useInternetIdentity();
-  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
-
-  return useMutation({
-    mutationFn: async (data: {
-      name: string;
-      username: string;
-      email: string | null;
-      vaultPasswordHash: string;
-    }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.registerUser(data.name, data.username, data.email, data.vaultPasswordHash);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile', principalText] });
+      queryClient.invalidateQueries({ queryKey: ['email2fa', principalText] });
     },
   });
 }

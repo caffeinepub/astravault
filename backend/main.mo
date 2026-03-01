@@ -50,7 +50,6 @@ actor {
 
   // ── User Management ──────────────────────────────────────────────────────────
 
-  // Register a new user; only non-anonymous principals may register.
   public shared ({ caller }) func registerUser(
     name : Text,
     username : Text,
@@ -63,7 +62,7 @@ actor {
     if (users.containsKey(caller)) {
       Runtime.trap("User already exists");
     };
-    let userProfile : UserProfile = {
+    let profile : UserProfile = {
       principal = caller;
       name;
       username;
@@ -72,63 +71,54 @@ actor {
       customLinks = [];
       createdAt = Time.now();
     };
-    users.add(caller, userProfile);
+    users.add(caller, profile);
   };
 
-  // Required by instructions: get the caller's own profile.
-  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can get their profile");
-    };
-    users.get(caller);
-  };
-
-  // Required by instructions: save (upsert) the caller's own profile.
-  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can save their profile");
-    };
-    // Ensure the stored principal always matches the caller.
-    let sanitised : UserProfile = { profile with principal = caller };
-    users.add(caller, sanitised);
-  };
-
-  // Required by instructions: fetch any user's profile (self or admin).
-  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
-    users.get(user);
-  };
-
-  // Update mutable fields of the caller's profile.
   public shared ({ caller }) func updateUserProfile(
     name : Text,
     username : Text,
     email : ?Text,
     vaultPasswordHash : ?Text,
   ) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can update their profile");
     };
+
     switch (users.get(caller)) {
-      case (?userProfile) {
+      case (?profile) {
         users.add(
           caller,
           {
-            userProfile with
+            profile with
             name;
             username;
             email;
             vaultPasswordHash = switch (vaultPasswordHash) {
               case (?hash) { hash };
-              case (null) { userProfile.vaultPasswordHash };
+              case (null) { profile.vaultPasswordHash };
             };
           },
         );
       };
       case (null) { Runtime.trap("User not found") };
     };
+  };
+
+  public shared ({ caller }) func deleteAccount() : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete their account");
+    };
+
+    users.remove(caller);
+    vaultNotes.remove(caller);
+    email2faUsers.remove(caller);
+  };
+
+  public query ({ caller }) func getProfile() : async ?UserProfile {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can get their profile");
+    };
+    users.get(caller);
   };
 
   // ── Custom Links ─────────────────────────────────────────────────────────────
@@ -139,7 +129,7 @@ actor {
     category : Text,
     iconName : Text,
   ) : async CustomLink {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can add custom links");
     };
 
@@ -169,7 +159,7 @@ actor {
     category : Text,
     iconName : Text,
   ) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can edit custom links");
     };
 
@@ -198,7 +188,7 @@ actor {
   };
 
   public shared ({ caller }) func deleteCustomLink(linkId : Nat) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can delete custom links");
     };
 
@@ -215,7 +205,7 @@ actor {
   };
 
   public query ({ caller }) func getCustomLinks() : async [CustomLink] {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can get custom links");
     };
     switch (users.get(caller)) {
@@ -229,7 +219,7 @@ actor {
   let vaultNotes = Map.empty<Principal, [(Nat, VaultNote)]>();
 
   public shared ({ caller }) func addVaultNote(encryptedContent : Text) : async VaultNote {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can add vault notes");
     };
 
@@ -253,7 +243,7 @@ actor {
     noteId : Nat,
     encryptedContent : Text,
   ) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can edit vault notes");
     };
 
@@ -282,7 +272,7 @@ actor {
   };
 
   public shared ({ caller }) func deleteVaultNote(noteId : Nat) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can delete vault notes");
     };
 
@@ -299,7 +289,7 @@ actor {
   };
 
   public query ({ caller }) func getVaultNotes() : async [VaultNote] {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can get vault notes");
     };
     switch (vaultNotes.get(caller)) {
@@ -318,30 +308,29 @@ actor {
     currentPasswordHash : Text,
     newPasswordHash : Text,
   ) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can change vault password");
     };
 
     switch (users.get(caller)) {
-      case (?userProfile) {
-        if (userProfile.vaultPasswordHash != currentPasswordHash) {
+      case (?profile) {
+        if (profile.vaultPasswordHash != currentPasswordHash) {
           Runtime.trap("Invalid current vault password");
         };
-        users.add(caller, { userProfile with vaultPasswordHash = newPasswordHash });
+        users.add(caller, { profile with vaultPasswordHash = newPasswordHash });
       };
       case (null) { Runtime.trap("User not found") };
     };
   };
 
-  // Vault password reset (admin-assisted or self with identity proof).
   public shared ({ caller }) func resetVaultPassword(newPasswordHash : Text) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can reset their vault password");
     };
 
     switch (users.get(caller)) {
-      case (?userProfile) {
-        users.add(caller, { userProfile with vaultPasswordHash = newPasswordHash });
+      case (?profile) {
+        users.add(caller, { profile with vaultPasswordHash = newPasswordHash });
       };
       case (null) { Runtime.trap("User not found") };
     };
@@ -352,7 +341,7 @@ actor {
   let email2faUsers = Set.empty<Principal>();
 
   public shared ({ caller }) func toggleEmail2fa(enable : Bool) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can enable/disable 2FA");
     };
 
@@ -364,33 +353,9 @@ actor {
   };
 
   public query ({ caller }) func isEmail2faEnabled() : async Bool {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can query 2FA status");
     };
     email2faUsers.contains(caller);
-  };
-
-  // ── Account Deletion ─────────────────────────────────────────────────────────
-
-  public shared ({ caller }) func deleteAccount() : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can delete their account");
-    };
-
-    users.remove(caller);
-    vaultNotes.remove(caller);
-    email2faUsers.remove(caller);
-  };
-
-  // ── Clean GetProfile Separation ──────────────────────────────────────────────
-
-  // Return a well-formed and documented response to distinguish between
-  // 'profile not found' and actual error or missing permission.
-  public query ({ caller }) func getProfile() : async ?UserProfile {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only authenticated principals can get a profile");
-    };
-    // Return null for actual 'profile does not exist' instead of trapping.
-    users.get(caller);
   };
 };

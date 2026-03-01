@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 25,
+  "projectStateVersion": 31,
   "summary": "AstraVault – a military-inspired secure personal command center dashboard. Full-stack app with React+Vite+TypeScript frontend (TailwindCSS, ShadCN/Radix UI) and Node.js+Express+MongoDB backend. Features JWT auth with HTTP-only cookies, email verification, 2FA OTP, account lockout, AES-256 encrypted private vault, custom link management, categorized Indian financial/government service links in sidebar, and a settings page. Matte black & military green UI with gold accents.",
   "architectural_notes": [
     "Backend: Node.js + Express + MongoDB/Mongoose with Helmet, express-rate-limit, mongo-sanitize, xss-clean",
@@ -213,9 +213,10 @@
       "id": "feature-restore-frontend-src-components-protectedroute-tsx-to-the-version-4-strict-state-machine-1-while-isactorready-is-false-or-the-profile-query-isloading-is-true-render-a-full-page-military-themed-loading-spinner-no-redirect-no-children-2-if-iserror-is-true-render-a-full-page-error-state-with-a-gold-accented-retry-button-that-calls-refetch-3-if-the-user-is-definitively-unauthenticated-not-logged-in-and-actor-initialization-is-complete-redirect-to-login-4-if-profile-data-is-null-new-user-render-profilesetupmodal-without-redirecting-5-if-profile-data-is-present-render-outlet-children-the-component-must-never-redirect-to-login-during-the-loading-phase",
       "title": "Restore `frontend/src/components/ProtectedRoute.tsx` to the Version 4 strict state machine: (1) While `isActorReady` is `false` OR the profile query `isLoading` is `true` → render a full-page military-themed loading spinner (no redirect, no children). (2) If `isError` is `true` → render a full-page error state with a gold-accented 'Retry' button that calls `refetch()`. (3) If the user is definitively unauthenticated (not logged in AND actor initialization is complete) → redirect to `/login`. (4) If profile data is `null` (new user) → render `<ProfileSetupModal>` without redirecting. (5) If profile data is present → render `<Outlet />` / children. The component must never redirect to `/login` during the loading phase.",
       "reqIds": [
-        "REQ-32"
+        "REQ-32",
+        "REQ-50"
       ],
-      "version": 1
+      "version": 2
     },
     {
       "id": "feature-restore-frontend-src-hooks-useactorready-ts-so-that-isactorready-is-true-only-when-a-the-internet-identity-isinitializing-flag-is-false-b-the-principal-is-non-anonymous-and-c-the-actor-instance-returned-by-useactor-is-non-null-all-three-conditions-must-be-strictly-enforced",
@@ -229,9 +230,10 @@
       "id": "feature-restore-frontend-src-hooks-usequeries-ts-so-the-usegetprofile-query-1-has-its-enabled-flag-strictly-gated-on-isactorready-true-2-includes-the-authenticated-principal-string-in-the-react-query-cache-key-e-g-profile-principaltext-3-treats-a-null-empty-optional-returned-by-the-backend-as-profile-not-found-new-user-flow-not-as-an-error-4-treats-only-a-thrown-exception-as-a-genuine-fetch-failure-iserror-all-other-query-hooks-in-the-file-must-also-gate-their-enabled-flag-on-isactorready",
       "title": "Restore `frontend/src/hooks/useQueries.ts` so the `useGetProfile` query: (1) has its `enabled` flag strictly gated on `isActorReady === true`; (2) includes the authenticated principal string in the React Query cache key (e.g. `['profile', principalText]`); (3) treats a `null` / empty optional returned by the backend as 'profile not found' (new user flow), not as an error; (4) treats only a thrown exception as a genuine fetch failure (`isError`). All other query hooks in the file must also gate their `enabled` flag on `isActorReady`.",
       "reqIds": [
-        "REQ-34"
+        "REQ-34",
+        "REQ-49"
       ],
-      "version": 1
+      "version": 2
     },
     {
       "id": "feature-restore-the-full-dashboard-layout-matching-version-4-dashboardlayout-tsx-composing-dashboardheader-tsx-appsidebar-tsx-the-main-content-area-and-dashboardfooter-tsx-the-header-must-include-the-logo-sidebar-toggle-and-profile-dropdown-name-username-avatar-initial-with-profile-settings-logout-options-and-a-logout-confirmation-modal-the-footer-must-display-developed-by-shubham-rathore-on-the-first-line-and-rajput-creating-history-on-the-second-line-in-gold-accent-all-pages-dashboard-vault-settings-must-render-inside-this-layout",
@@ -245,9 +247,10 @@
       "id": "feature-restore-frontend-src-components-appsidebar-tsx-to-the-version-4-design-vertical-collapsible-sidebar-with-categorized-default-links-and-user-custom-links-grouped-by-category-each-with-appropriate-lucide-icons-the-sidebar-must-include-a-add-link-entry-that-opens-the-customlinkmanager-modal-active-link-state-must-be-highlighted-with-the-gold-accent-color-the-sidebar-must-use-the-military-theme-dark-background-military-green-category-headers-gold-active-hover-states",
       "title": "Restore `frontend/src/components/AppSidebar.tsx` to the Version 4 design: vertical collapsible sidebar with categorized default links and user custom links grouped by category, each with appropriate Lucide icons. The sidebar must include a '+ ADD LINK' entry that opens the `CustomLinkManager` modal. Active link state must be highlighted with the gold accent color. The sidebar must use the military theme (dark background, military-green category headers, gold active/hover states).",
       "reqIds": [
-        "REQ-36"
+        "REQ-36",
+        "REQ-52"
       ],
-      "version": 1
+      "version": 2
     },
     {
       "id": "feature-ensure-frontend-src-data-defaultlinks-ts-contains-all-default-sidebar-links-with-the-following-corrected-urls-preserving-all-other-version-4-entries-and-their-icons-state-bank-of-india-https-sbi-bank-in-maadhaar-https-uidai-gov-in-en-xiaomi-home-http-play-google-com-store-apps-details-id-com-xiaomi-smarthome-hl-en-in-google-calendar-email-or-services-category-https-calendar-google-com-all-other-default-links-punjab-national-bank-india-post-payments-bank-gmail-coindcx-et-money-groww-irctc-digilocker-lic-digital-v380-pro-google-pay-phonepe-must-remain-unchanged-all-links-must-open-in-a-new-tab",
@@ -294,6 +297,150 @@
       "title": "Audit `frontend/src/hooks/useActorReady.ts` and enforce that `isActorReady` is `true` only when all three conditions are met in order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. If the hook currently sets `isActorReady` to `true` before `isInitializing` has settled, or before the principal is confirmed non-anonymous, or before the actor is non-null, rewrite it to enforce all three conditions strictly.",
       "reqIds": [
         "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-the-version-4-color-palette-in-frontend-src-index-css-and-frontend-tailwind-config-js-matte-black-0a0a0a-111-for-all-page-backgrounds-deep-military-green-2d4a1e-3a5c28-as-the-primary-accent-color-and-gold-c9a84c-d4af37-for-active-states-borders-hover-highlights-and-footer-text-ensure-all-css-custom-property-tokens-and-tailwind-theme-extensions-exactly-match-the-version-4-values-do-not-change-any-layout-functionality-routing-or-component-logic",
+      "title": "Restore the Version 4 color palette in `frontend/src/index.css` and `frontend/tailwind.config.js`: matte black (#0a0a0a / #111) for all page backgrounds, deep military green (#2d4a1e / #3a5c28) as the primary accent color, and gold (#c9a84c / #d4af37) for active states, borders, hover highlights, and footer text. Ensure all CSS custom property tokens and Tailwind theme extensions exactly match the Version 4 values. Do not change any layout, functionality, routing, or component logic.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-app-tsx-to-the-version-4-routing-structure-login-public-loginpage-protected-dashboardpage-vault-protected-vaultpage-settings-protected-settingspage-the-authguard-must-render-only-the-full-page-military-themed-loading-spinner-while-isinitializing-is-true-and-must-never-redirect-to-login-or-render-protected-content-until-isinitializing-has-definitively-settled-to-false",
+      "title": "Restore `frontend/src/App.tsx` to the Version 4 routing structure: `/login` (public, LoginPage), `/` (protected, DashboardPage), `/vault` (protected, VaultPage), `/settings` (protected, SettingsPage). The `AuthGuard` must render only the full-page military-themed loading spinner while `isInitializing` is `true` and must never redirect to `/login` or render protected content until `isInitializing` has definitively settled to `false`.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-pages-loginpage-tsx-to-the-version-4-design-astravault-branding-military-themed-matte-black-background-with-gold-and-military-green-accents-and-a-single-login-with-internet-identity-button-wired-to-the-useinternetidentity-hook-already-authenticated-users-must-be-redirected-to-the-dashboard",
+      "title": "Restore `frontend/src/pages/LoginPage.tsx` to the Version 4 design: AstraVault branding, military-themed matte black background with gold and military-green accents, and a single 'Login with Internet Identity' button wired to the `useInternetIdentity` hook. Already-authenticated users must be redirected to the dashboard.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-hooks-useactorready-ts-so-isactorready-is-true-only-when-all-three-conditions-are-met-in-order-a-isinitializing-from-useinternetidentity-is-false-b-the-principal-is-non-anonymous-not-equal-to-principal-anonymous-and-c-the-actor-instance-returned-by-useactor-is-non-null-all-three-conditions-must-be-strictly-enforced",
+      "title": "Restore `frontend/src/hooks/useActorReady.ts` so `isActorReady` is `true` only when all three conditions are met in order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. All three conditions must be strictly enforced.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-the-full-dashboard-layout-to-version-4-dashboardlayout-tsx-composing-dashboardheader-tsx-appsidebar-tsx-main-content-area-and-dashboardfooter-tsx-the-header-must-include-the-astravault-logo-sidebar-toggle-and-profile-dropdown-name-username-avatar-initial-with-profile-settings-and-logout-options-logout-shows-a-confirmation-modal-before-clearing-session-the-footer-must-display-developed-by-shubham-rathore-on-the-first-line-and-rajput-creating-history-on-the-second-line-in-gold-accent-all-pages-dashboard-vault-settings-must-render-inside-this-layout",
+      "title": "Restore the full dashboard layout to Version 4: `DashboardLayout.tsx` composing `DashboardHeader.tsx`, `AppSidebar.tsx`, main content area, and `DashboardFooter.tsx`. The header must include the AstraVault logo, sidebar toggle, and profile dropdown (name/username/avatar initial) with Profile, Settings, and Logout options — Logout shows a confirmation modal before clearing session. The footer must display 'Developed by Shubham Rathore' on the first line and 'Rajput – Creating History' on the second line in gold accent. All pages (Dashboard, Vault, Settings) must render inside this layout.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-data-defaultlinks-ts-with-all-version-4-default-sidebar-links-and-the-following-corrected-urls-state-bank-of-india-https-sbi-bank-in-maadhaar-https-uidai-gov-in-en-xiaomi-home-http-play-google-com-store-apps-details-id-com-xiaomi-smarthome-hl-en-in-google-calendar-in-email-or-services-category-https-calendar-google-com-all-other-links-punjab-national-bank-https-pnbindia-in-india-post-payments-bank-https-ippbonline-com-gmail-https-mail-google-com-coindcx-https-coindcx-com-et-money-https-etmoney-com-groww-https-groww-in-irctc-https-irctc-co-in-digilocker-https-digilocker-gov-in-lic-digital-https-licindia-in-v380-pro-https-v380-cn-google-pay-https-pay-google-com-phonepe-https-phonepe-com-must-remain-unchanged-all-links-open-in-a-new-tab",
+      "title": "Restore `frontend/src/data/defaultLinks.ts` with all Version 4 default sidebar links and the following corrected URLs: State Bank of India → `https://sbi.bank.in/`, mAadhaar → `https://uidai.gov.in/en/`, Xiaomi Home → `http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN`, Google Calendar (in EMAIL or SERVICES category) → `https://calendar.google.com`. All other links (Punjab National Bank – `https://pnbindia.in`, India Post Payments Bank – `https://ippbonline.com`, Gmail – `https://mail.google.com`, CoinDCX – `https://coindcx.com`, ET Money – `https://etmoney.com`, Groww – `https://groww.in`, IRCTC – `https://irctc.co.in`, DigiLocker – `https://digilocker.gov.in`, LIC Digital – `https://licindia.in`, V380 Pro – `https://v380.cn`, Google Pay – `https://pay.google.com`, PhonePe – `https://phonepe.com`) must remain unchanged. All links open in a new tab.",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-the-version-4-military-inspired-visual-theme-across-all-pages-and-components-matte-black-0a0a0a-111-for-all-page-backgrounds-deep-military-green-2d4a1e-3a5c28-as-the-primary-accent-color-gold-c9a84c-d4af37-for-active-states-borders-hover-highlights-and-footer-text-fonts-rajdhani-and-inter-ensure-frontend-src-index-css-and-frontend-tailwind-config-js-define-these-exact-css-custom-property-tokens-and-tailwind-theme-extensions-all-pages-login-dashboard-vault-settings-must-consistently-apply-the-theme",
+      "title": "Restore the Version 4 military-inspired visual theme across all pages and components: matte black (#0a0a0a / #111) for all page backgrounds, deep military green (#2d4a1e / #3a5c28) as the primary accent color, gold (#c9a84c / #d4af37) for active states, borders, hover highlights, and footer text. Fonts: Rajdhani and Inter. Ensure `frontend/src/index.css` and `frontend/tailwind.config.js` define these exact CSS custom property tokens and Tailwind theme extensions. All pages (Login, Dashboard, Vault, Settings) must consistently apply the theme.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-pages-dashboardpage-tsx-to-the-version-4-design-welcome-banner-stat-cards-default-links-count-custom-links-count-vault-notes-count-and-quick-access-grid-for-navigating-to-app-sections-all-styled-with-the-military-theme",
+      "title": "Restore `frontend/src/pages/DashboardPage.tsx` to the Version 4 design: welcome banner, stat cards (default links count, custom links count, vault notes count), and quick-access grid for navigating to app sections, all styled with the military theme.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-pages-vaultpage-tsx-to-the-version-4-design-vault-unlock-screen-requiring-the-secondary-vault-password-and-once-unlocked-a-full-crud-search-interface-for-aes-256-gcm-encrypted-notes-notes-are-encrypted-client-side-before-storage-and-decrypted-client-side-after-unlock-include-a-vault-password-reset-option-all-styled-with-the-military-theme",
+      "title": "Restore `frontend/src/pages/VaultPage.tsx` to the Version 4 design: vault unlock screen requiring the secondary vault password, and once unlocked, a full CRUD + search interface for AES-256-GCM encrypted notes. Notes are encrypted client-side before storage and decrypted client-side after unlock. Include a vault password reset option. All styled with the military theme.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-pages-settingspage-tsx-to-the-version-4-design-with-these-sections-1-update-profile-name-username-email-2-change-vault-password-enter-current-vault-password-then-new-vault-password-3-enable-disable-email-otp-2fa-toggle-4-view-active-sessions-list-principal-id-timestamp-5-logout-all-sessions-button-6-delete-account-with-confirmation-dialog-all-styled-with-the-military-theme",
+      "title": "Restore `frontend/src/pages/SettingsPage.tsx` to the Version 4 design with these sections: (1) Update profile (name, username, email), (2) Change vault password (enter current vault password, then new vault password), (3) Enable/disable Email OTP 2FA toggle, (4) View active sessions list (principal ID + timestamp), (5) Logout all sessions button, (6) Delete account with confirmation dialog. All styled with the military theme.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-components-profilesetupmodal-tsx-to-the-version-4-design-full-screen-modal-for-new-users-to-register-a-profile-with-name-username-optional-email-and-vault-password-sha-256-hashed-before-submission-on-success-invalidate-the-profile-query-cache-so-protectedroute-can-proceed-to-render-the-dashboard",
+      "title": "Restore `frontend/src/components/ProfileSetupModal.tsx` to the Version 4 design: full-screen modal for new users to register a profile with name, username, optional email, and vault password (SHA-256 hashed before submission). On success, invalidate the profile query cache so ProtectedRoute can proceed to render the dashboard.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-components-customlinkmanager-tsx-to-the-version-4-design-dialog-based-ui-for-adding-editing-and-deleting-custom-links-fields-name-url-category-selectable-from-existing-categories-or-a-new-custom-one-icon-selectable-from-a-predefined-icon-set-changes-are-persisted-to-the-backend-and-reflected-immediately-in-the-sidebar-all-styled-with-the-military-theme",
+      "title": "Restore `frontend/src/components/CustomLinkManager.tsx` to the Version 4 design: dialog-based UI for adding, editing, and deleting custom links. Fields: name, URL, category (selectable from existing categories or a new custom one), icon (selectable from a predefined icon set). Changes are persisted to the backend and reflected immediately in the sidebar. All styled with the military theme.",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-pages-loginpage-tsx-to-a-fully-functional-visually-complete-login-page-with-astravault-branding-matte-black-0a0a0a-background-gold-c9a84c-d4af37-and-military-green-2d4a1e-3a5c28-accents-shield-command-iconography-rajdhani-inter-fonts-and-a-single-login-with-internet-identity-button-wired-to-the-useinternetidentity-hook-s-login-function-already-authenticated-users-identity-resolved-and-non-anonymous-must-be-automatically-redirected-to-the-page-must-be-accessible-at-the-login-route-for-all-unauthenticated-users",
+      "title": "Restore `frontend/src/pages/LoginPage.tsx` to a fully functional, visually complete login page with AstraVault branding: matte black (#0a0a0a) background, gold (#c9a84c / #d4af37) and military-green (#2d4a1e / #3a5c28) accents, shield/command iconography, Rajdhani/Inter fonts, and a single 'Login with Internet Identity' button wired to the `useInternetIdentity` hook's `login` function. Already-authenticated users (identity resolved and non-anonymous) must be automatically redirected to `/`. The page must be accessible at the `/login` route for all unauthenticated users.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-hooks-useactorready-ts-so-that-isactorready-is-true-only-when-all-three-conditions-are-strictly-met-in-order-a-isinitializing-from-useinternetidentity-is-false-b-the-principal-is-non-anonymous-not-equal-to-principal-anonymous-and-c-the-actor-instance-returned-by-useactor-is-non-null-the-hook-must-never-flip-isactorready-to-true-prematurely-export-isactorready-as-a-stable-boolean",
+      "title": "Restore `frontend/src/hooks/useActorReady.ts` so that `isActorReady` is `true` only when all three conditions are strictly met in order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. The hook must never flip `isActorReady` to `true` prematurely. Export `isActorReady` as a stable boolean.",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-hooks-usequeries-ts-so-the-usegetprofile-query-1-has-its-enabled-flag-strictly-gated-on-isactorready-true-2-includes-the-authenticated-principal-string-in-the-react-query-cache-key-e-g-profile-principaltext-so-it-auto-invalidates-when-the-principal-changes-3-treats-a-null-empty-optional-returned-by-the-backend-as-profile-not-found-new-user-flow-not-as-an-error-4-treats-only-a-thrown-exception-as-a-genuine-fetch-failure-iserror-all-other-query-hooks-in-the-file-that-call-backend-functions-must-also-gate-their-enabled-flag-on-isactorready",
+      "title": "Restore `frontend/src/hooks/useQueries.ts` so the `useGetProfile` query: (1) has its `enabled` flag strictly gated on `isActorReady === true`; (2) includes the authenticated principal string in the React Query cache key (e.g. `['profile', principalText]`) so it auto-invalidates when the principal changes; (3) treats a `null` / empty optional returned by the backend as 'profile not found' (new user flow), not as an error; (4) treats only a thrown exception as a genuine fetch failure (`isError`). All other query hooks in the file that call backend functions must also gate their `enabled` flag on `isActorReady`.",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-components-protectedroute-tsx-to-the-strict-state-machine-1-while-isactorready-is-false-or-the-profile-query-isloading-is-true-render-a-full-page-military-themed-loading-spinner-no-redirect-no-children-rendered-2-if-iserror-is-true-render-a-full-page-error-state-with-a-gold-accented-retry-button-that-calls-refetch-3-if-the-user-is-definitively-unauthenticated-not-logged-in-and-actor-initialization-is-complete-redirect-to-login-4-if-data-is-null-profile-not-found-new-user-render-profilesetupmodal-without-redirecting-5-if-profile-data-is-present-render-outlet-children-the-component-must-never-redirect-to-login-during-the-loading-phase",
+      "title": "Restore `frontend/src/components/ProtectedRoute.tsx` to the strict state machine: (1) While `isActorReady` is `false` OR the profile query `isLoading` is `true` → render a full-page military-themed loading spinner (no redirect, no children rendered). (2) If `isError` is `true` → render a full-page error state with a gold-accented 'Retry' button that calls `refetch()`. (3) If the user is definitively unauthenticated (not logged in AND actor initialization is complete) → redirect to `/login`. (4) If `data` is `null` (profile not found, new user) → render `<ProfileSetupModal>` without redirecting. (5) If profile data is present → render `<Outlet />` / children. The component must never redirect to `/login` during the loading phase.",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-app-tsx-to-the-version-4-routing-structure-with-routes-login-public-loginpage-protected-dashboardpage-vault-protected-vaultpage-settings-protected-settingspage-the-authguard-component-must-render-only-the-full-page-military-themed-loading-spinner-while-isinitializing-is-true-and-must-never-redirect-to-login-or-render-protected-content-until-isinitializing-has-definitively-settled-to-false",
+      "title": "Restore `frontend/src/App.tsx` to the Version 4 routing structure with routes: `/login` (public, LoginPage), `/` (protected, DashboardPage), `/vault` (protected, VaultPage), `/settings` (protected, SettingsPage). The `AuthGuard` component must render only the full-page military-themed loading spinner while `isInitializing` is `true` and must never redirect to `/login` or render protected content until `isInitializing` has definitively settled to `false`.",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-frontend-src-components-profilesetupmodal-tsx-to-the-version-4-design-a-full-screen-modal-for-new-users-to-register-a-profile-with-fields-for-name-username-optional-email-and-vault-password-sha-256-hashed-client-side-before-submission-on-successful-registration-invalidate-the-profile-principaltext-react-query-cache-key-so-protectedroute-immediately-transitions-from-the-modal-to-the-dashboard-style-the-modal-with-the-military-theme-matte-black-background-gold-accents-military-green-buttons",
+      "title": "Restore `frontend/src/components/ProfileSetupModal.tsx` to the Version 4 design: a full-screen modal for new users to register a profile with fields for name, username, optional email, and vault password (SHA-256 hashed client-side before submission). On successful registration, invalidate the `['profile', principalText]` React Query cache key so `ProtectedRoute` immediately transitions from the modal to the dashboard. Style the modal with the military theme (matte black background, gold accents, military-green buttons).",
+      "reqIds": [
+        "REQ-67"
       ],
       "version": 1
     }
@@ -428,6 +575,42 @@
       "summary": "In `frontend/src/main.tsx` (or wherever `InternetIdentityProvider` is instantiated), ensure the `identityProvider` prop is set to the correct URL for the current environment: `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943` when running locally against dfx, and `https://identity.ic0.app` for production. Use `process.env.NODE_ENV`, `import.meta.env.DEV`, or the `DFX_NETWORK` environment variable to select the correct URL at build time. Remove any hardcoded, unreachable, or malformed identity provider URL that could cause the Internet Identity iframe to hang on 'Securing Connection'.",
       "reqIds": [
         "REQ-42"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Restore the Version 4 color palette exactly (matte black #0a0a0a/#111 background, military green #2d4a1e/#3a5c28 accent, gold #c9a84c/#d4af37 highlights) across all pages and components, keeping everything else unchanged.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "Full reset to Version 4 baseline — restore entire app (all pages, components, routing, auth, sidebar, theme, hooks) exactly as it was in Version 4, discarding all changes made after Version 4.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-52",
+      "summary": "Audit `backend/main.mo` to confirm the `getProfile` function returns `null` (empty optional `?UserProfile`) when no profile exists for the caller principal, and only traps for genuine runtime failures. If it currently traps or returns an error variant for a missing profile, fix it to return `null` instead. Do not change any other backend logic or data structures.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-54",
+      "summary": "Ensure `frontend/src/main.tsx` configures the `InternetIdentityProvider` with the correct `identityProvider` URL for each environment: `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943` when `import.meta.env.DEV` is `true`, and `https://identity.ic0.app` for production. Remove any hardcoded, unreachable, or malformed identity provider URL that causes the Internet Identity iframe to hang on 'Securing Connection'. Use `import.meta.env.DEV` or `import.meta.env.VITE_DFX_NETWORK` to select the correct URL at build time.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-60",
+      "summary": "Audit `backend/main.mo` — specifically the `getProfile` function — to confirm it returns `null` (empty optional `?UserProfile`) when no profile exists for the caller principal, and only traps or returns an error for genuine runtime failures. If it currently traps on a missing profile or returns an error variant for 'not found', fix it to return `null` instead. Do not change any other backend logic or data structures.",
+      "reqIds": [
+        "REQ-68"
       ],
       "status": "pending"
     }

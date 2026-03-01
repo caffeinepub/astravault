@@ -1,27 +1,45 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T06:04:43.842Z",
-  "summary": "The diff implements REQ-43 and REQ-44 correctly. REQ-42 (fixing the InternetIdentityProvider URL) is not addressed in any of the modified files — main.tsx is an immutable path but the requirement still needed to be fulfilled somewhere, and no alternative file was modified to set the correct identityProvider URL.",
+  "generatedAt": "2026-03-01T07:07:50.913Z",
+  "summary": "The diff implements most of the required changes across frontend components, hooks, and pages. REQ-61 through REQ-67 are largely addressed. REQ-62 is notably absent as main.tsx is listed as an immutable file and no changes to it appear in the diff. REQ-68 (backend fix) also shows no evidence of backend changes.",
   "missing_requirements": [
     {
-      "id": "REQ-42",
-      "requirement": "Ensure the InternetIdentityProvider receives the correct identityProvider URL for the current environment (local: http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943, production: https://identity.ic0.app), using import.meta.env.DEV or similar flag, removing any hardcoded/unreachable URL.",
-      "reason": "None of the modified files (App.tsx, ProtectedRoute.tsx, useActorReady.ts, frontend-file-summaries.txt, project_state.json) touch the InternetIdentityProvider instantiation or its identityProvider prop. main.tsx is listed as immutable but the requirement still demands the correct URL be set — no alternative file was modified to address this.",
+      "id": "REQ-62",
+      "requirement": "Ensure frontend/src/main.tsx configures the InternetIdentityProvider with the correct identityProvider URL for each environment (dev: http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943, prod: https://identity.ic0.app). Remove hardcoded or malformed identity provider URLs.",
+      "reason": "main.tsx is listed as an immutable path in the constraints and no changes to it appear anywhere in the diff. The identity provider URL configuration is never updated.",
       "evidence": [
-        "frontend/src/App.tsx",
         "frontend/src/main.tsx"
+      ]
+    },
+    {
+      "id": "REQ-68",
+      "requirement": "Audit backend/main.mo getProfile function to return null (empty optional ?UserProfile) when no profile exists, rather than trapping or returning an error variant.",
+      "reason": "No backend files appear in the diff at all. There is no evidence that backend/main.mo was modified.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-65",
+      "requirement": "ProtectedRoute must redirect unauthenticated users to /login only after actor initialization is confirmed complete, and must never redirect during the loading phase.",
+      "reason": "In ProtectedRoute.tsx, the logic checks !isActorReady && !isAuthenticated and immediately redirects to /login. This can fire before the actor is fully ready for authenticated users whose actor has not yet loaded, potentially causing premature redirects.",
+      "evidence": [
+        "frontend/src/components/ProtectedRoute.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "A 'settled flag' pattern using useRef and useState was introduced in RootLayout (App.tsx), ProtectedRoute.tsx, and useActorReady.ts to prevent re-showing the loader on brief re-initialization flashes caused by an authClient dependency loop.",
-      "reason": "The build request only asked to block routing decisions while isInitializing is true. It did not request a 'has ever settled' optimization or special handling of a secondary re-initialization flash from an authClient dependency loop. This is extra logic beyond what was specified.",
+      "description": "useActorReady uses a ref-based 'has ever settled' flag as an additional fourth condition beyond the three stated conditions in the spec.",
+      "reason": "The spec requires only three strict conditions: isInitializing false, non-anonymous principal, and non-null actor. The hasEverSettledRef pattern adds an extra gate not explicitly requested.",
       "evidence": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/ProtectedRoute.tsx",
         "frontend/src/hooks/useActorReady.ts"
+      ]
+    },
+    {
+      "description": "ProfileSetupModal includes a logout/cancel button that calls clear() and queryClient.clear(), allowing the user to abandon registration.",
+      "reason": "The spec does not mention a logout or cancel option within the ProfileSetupModal. The requirement only specifies collecting name, username, optional email, and vault password fields with SHA-256 hashing and cache invalidation on success.",
+      "evidence": [
+        "frontend/src/components/ProfileSetupModal.tsx"
       ]
     }
   ],
@@ -29,8 +47,12 @@
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/App.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
     "frontend/src/components/ProtectedRoute.tsx",
     "frontend/src/hooks/useActorReady.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/LoginPage.tsx",
+    "frontend/src/pages/SettingsPage.tsx",
     "project_state.json"
   ]
 }

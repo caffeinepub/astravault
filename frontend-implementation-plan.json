@@ -1,62 +1,131 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix 'Securing Connection' hang — correct InternetIdentityProvider URL and AuthGuard initialization guard",
+  "title": "Fix Login Page Display and Internet Identity Verification Flow",
   "requirements": [
     {
-      "id": "REQ-42",
-      "summary": "Configure InternetIdentityProvider with correct environment-specific identity provider URL to prevent Internet Identity iframe hang",
+      "id": "REQ-61",
+      "summary": "Restore LoginPage.tsx to a fully functional, visually complete login page with AstraVault military branding and automatic redirect for authenticated users",
       "acceptanceCriteria": [
-        "The `InternetIdentityProvider` receives the correct `identityProvider` URL for the active environment (local vs. production).",
-        "No hardcoded unreachable URL is present in the provider configuration.",
-        "The Internet Identity iframe loads without hanging on 'Securing Connection' in both local and production environments.",
-        "The environment selection logic uses a reliable build-time or runtime flag (e.g., `import.meta.env.DEV` or `DFX_NETWORK`)."
+        "Navigating to `/login` renders the AstraVault login page with matte black background and gold/green accents",
+        "The 'Login with Internet Identity' button is visible and triggers the Internet Identity login popup when clicked",
+        "An already-authenticated user visiting `/login` is automatically redirected to `/`",
+        "The page uses Rajdhani/Inter fonts consistent with the military theme",
+        "No blank screen, missing content, or JS errors appear on the login route"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useInternetIdentity.ts",
+          "path": "frontend/src/pages/LoginPage.tsx",
           "operation": "modify",
-          "description": "Update the InternetIdentityProvider configuration to use the correct identityProvider URL based on environment. For local development (when `import.meta.env.DEV` is true), use `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943`. For production, use `https://identity.ic0.app`. Remove any hardcoded unreachable or malformed URLs that cause the Internet Identity iframe to hang on 'Securing Connection'. Add environment detection logic that reliably selects the correct URL at build time or runtime."
+          "description": "Restore the login page to render a fully styled AstraVault-branded login interface with matte black (#0a0a0a) background, gold (#c9a84c / #d4af37) and military-green (#2d4a1e / #3a5c28) accents, shield/command iconography (use the generated shield logo at frontend/public/assets/generated/astravault-shield-logo.dim_256x256.png), and Rajdhani/Inter fonts. Render a single 'Login with Internet Identity' button that calls the `login` function from `useInternetIdentity`. Add a useEffect that checks if the user is already authenticated (identity resolved and non-anonymous) and redirects to `/` using React Router's navigate. Show a loading spinner while `loginStatus === 'logging-in'`. Ensure the page is accessible at the `/login` route for all unauthenticated users."
         }
       ]
     },
     {
-      "id": "REQ-43",
-      "summary": "Prevent AuthGuard from making routing decisions while Internet Identity is still initializing",
+      "id": "REQ-62",
+      "summary": "Configure InternetIdentityProvider with correct environment-specific identityProvider URL to prevent Internet Identity iframe hanging",
       "acceptanceCriteria": [
-        "`AuthGuard` renders the full-page military-themed loading spinner (matte black background, gold/green accents) when `isInitializing === true`.",
-        "No redirect to `/login` occurs while `isInitializing` is `true`.",
-        "After `isInitializing` settles to `false`, unauthenticated users are redirected to `/login` and authenticated users see their protected content.",
-        "The 'Securing Connection' screen does not appear indefinitely after this fix."
+        "In development mode (`import.meta.env.DEV === true`), `identityProvider` resolves to `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943`",
+        "In production mode, `identityProvider` resolves to `https://identity.ic0.app`",
+        "The Internet Identity popup opens successfully without hanging on 'Securing Connection'",
+        "No hardcoded or unreachable identity provider URL exists in `main.tsx`"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/main.tsx",
           "operation": "modify",
-          "description": "Audit the RootLayout and AuthGuard logic to ensure no routing decision (redirect to `/login` or rendering protected content) occurs while `isInitializing` is `true`. While `isInitializing === true`, render only the full-page military-themed loading spinner with matte black background and gold/green accents. Only after `isInitializing` definitively settles to `false` should the guard redirect unauthenticated users to `/login` or render protected routes for authenticated users."
-        },
-        {
-          "path": "frontend/src/components/ProtectedRoute.tsx",
-          "operation": "modify",
-          "description": "Ensure the ProtectedRoute component does not make any routing decisions or show authentication-dependent UI while `isInitializing` is `true`. Render the full-page military-themed loading spinner during initialization. Only after initialization is complete should the component check authentication state and either redirect to login or render the protected outlet."
+          "description": "Update the `InternetIdentityProvider` configuration to set the `identityProvider` prop dynamically based on the environment. Use a ternary expression: if `import.meta.env.DEV` is `true`, set `identityProvider` to `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943`; otherwise, set it to `https://identity.ic0.app`. Remove any hardcoded, unreachable, or malformed identity provider URL that causes the Internet Identity iframe to hang on 'Securing Connection'. Ensure the provider wraps the App component correctly."
         }
       ]
     },
     {
-      "id": "REQ-44",
-      "summary": "Enforce strict three-condition check in useActorReady hook to prevent premature actor readiness signal",
+      "id": "REQ-63",
+      "summary": "Restore useActorReady hook to strictly validate all three readiness conditions before returning true",
       "acceptanceCriteria": [
-        "`isActorReady` returns `false` while `isInitializing === true`.",
-        "`isActorReady` returns `false` when the principal equals `Principal.anonymous()`.",
-        "`isActorReady` returns `false` when the actor instance is `null` or `undefined`.",
-        "`isActorReady` returns `true` only after all three conditions are simultaneously satisfied.",
-        "No premature `true` value causes dependent queries to fire before the identity is resolved."
+        "`isActorReady` is `false` while `isInitializing` is `true`",
+        "`isActorReady` is `false` when the principal equals `Principal.anonymous()`",
+        "`isActorReady` is `false` when the actor instance is `null`",
+        "`isActorReady` flips to `true` only after all three conditions are simultaneously satisfied",
+        "No premature `true` value causes queries to fire before the actor is ready"
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useActorReady.ts",
           "operation": "modify",
-          "description": "Rewrite the useActorReady hook to enforce that `isActorReady` returns `true` only when all three conditions are met in strict order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. If the hook currently sets `isActorReady` to `true` before any of these conditions are satisfied, update the logic to check all three conditions strictly and simultaneously before returning `true`."
+          "description": "Restore the hook logic so that `isActorReady` is computed as `true` only when all three conditions are strictly met in order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the identity is non-null and the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. Use a useMemo or direct boolean computation to ensure the hook never flips `isActorReady` to `true` prematurely. Export `isActorReady` as a stable boolean."
+        }
+      ]
+    },
+    {
+      "id": "REQ-64",
+      "summary": "Restore useQueries.ts to gate all queries on isActorReady and handle null profile responses correctly",
+      "acceptanceCriteria": [
+        "`useGetProfile` does not fire before `isActorReady` is `true`",
+        "The React Query cache key includes the principal string (e.g. `['profile', principalText]`)",
+        "A `null` response from `getProfile` sets `data` to `null` and does not set `isError` to `true`",
+        "A thrown exception from `getProfile` sets `isError` to `true`",
+        "All other backend-calling queries in `useQueries.ts` are gated on `isActorReady`"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Restore the `useGetProfile` query hook so its `enabled` flag is strictly gated on `isActorReady === true`. Update the React Query cache key to include the authenticated principal string (e.g. `['profile', principalText]`) so it auto-invalidates when the principal changes. Ensure the query treats a `null` or empty optional returned by the backend as 'profile not found' (new user flow), not as an error — only a thrown exception should result in `isError: true`. Audit all other query hooks in the file (e.g. custom links, vault notes) and ensure their `enabled` flags also gate on `isActorReady` to prevent premature queries."
+        }
+      ]
+    },
+    {
+      "id": "REQ-65",
+      "summary": "Restore ProtectedRoute.tsx to implement a strict state machine with loading, error, unauthenticated redirect, new user modal, and authenticated outlet rendering",
+      "acceptanceCriteria": [
+        "A full-page military-themed loading spinner is shown while `isActorReady` is `false` or profile query is loading",
+        "No redirect to `/login` occurs while loading is in progress",
+        "A 'Retry' button with gold accent is shown when the profile query errors; clicking it calls `refetch()`",
+        "Unauthenticated users are redirected to `/login` only after actor initialization is confirmed complete",
+        "New users (null profile) see `<ProfileSetupModal>` instead of being redirected",
+        "Authenticated users with a profile see the protected page content (`<Outlet />`)"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ProtectedRoute.tsx",
+          "operation": "modify",
+          "description": "Restore the component to implement a strict state machine: (1) While `isActorReady` is `false` OR the profile query `isLoading` is `true`, render a full-page military-themed loading spinner (with matte black background, gold spinner accent) — do not redirect or render children. (2) If `isError` is `true` (profile query threw an exception), render a full-page error state with a gold-accented 'Retry' button that calls `refetch()`. (3) If the user is definitively unauthenticated (identity is null or anonymous AND actor initialization is complete), redirect to `/login` using React Router's Navigate. (4) If `data` is `null` (profile not found, new user), render `<ProfileSetupModal>` without redirecting. (5) If profile data is present, render `<Outlet />` (the protected route children). The component must never redirect to `/login` during the loading phase."
+        }
+      ]
+    },
+    {
+      "id": "REQ-66",
+      "summary": "Restore App.tsx to Version 4 routing structure with AuthGuard rendering only a loading spinner until isInitializing settles",
+      "acceptanceCriteria": [
+        "Routes `/login`, `/`, `/vault`, and `/settings` are all defined and functional",
+        "While `isInitializing` is `true`, only the full-page loading spinner is rendered — no routing decision is made",
+        "After `isInitializing` settles to `false`, unauthenticated users are redirected to `/login`",
+        "Authenticated users can access `/`, `/vault`, and `/settings`",
+        "No blank screen or premature redirect occurs during the initialization phase"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Restore the App.tsx routing structure to Version 4 with routes: `/login` (public, renders LoginPage), `/` (protected, renders DashboardPage), `/vault` (protected, renders VaultPage), `/settings` (protected, renders SettingsPage). Ensure the `AuthGuard` (or root layout component wrapping protected routes) checks `isInitializing` from `useInternetIdentity` and renders only the full-page military-themed loading spinner while `isInitializing` is `true`. The component must never redirect to `/login` or render protected content until `isInitializing` has definitively settled to `false`. After initialization completes, unauthenticated users are redirected to `/login`, and authenticated users proceed to the requested protected route."
+        }
+      ]
+    },
+    {
+      "id": "REQ-67",
+      "summary": "Restore ProfileSetupModal.tsx to Version 4 design with client-side SHA-256 hashing and query cache invalidation on success",
+      "acceptanceCriteria": [
+        "New users (null profile) see the ProfileSetupModal after Internet Identity login",
+        "The modal collects name, username, optional email, and vault password",
+        "The vault password is SHA-256 hashed before being sent to the backend",
+        "On successful profile creation, the profile React Query cache is invalidated and the modal closes, revealing the dashboard",
+        "The modal is styled with matte black background, gold accents, and military-green buttons consistent with the military theme"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ProfileSetupModal.tsx",
+          "operation": "modify",
+          "description": "Restore the ProfileSetupModal to the Version 4 design: a full-screen modal (Dialog component from shadcn/ui or custom overlay) styled with matte black (#0a0a0a) background, gold (#c9a84c / #d4af37) accents, and military-green (#2d4a1e / #3a5c28) buttons. The modal collects name, username, optional email, and vault password (with a confirmation field). On form submission, hash the vault password client-side using SHA-256 (via the utility in frontend/src/utils/encryption.ts) before calling the `registerUser` mutation. On successful registration, invalidate the React Query cache key `['profile', principalText]` so `ProtectedRoute` immediately transitions from the modal to the dashboard. Include validation for required fields and password confirmation matching."
         }
       ]
     }

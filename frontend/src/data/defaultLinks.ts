@@ -1,164 +1,217 @@
 import {
-  Building2,
+  Landmark,
   Mail,
   TrendingUp,
-  Wrench,
-  CreditCard,
   Globe,
+  CreditCard,
+  Shield,
+  Home,
+  Calendar,
   Train,
   FileText,
-  Shield,
-  Camera,
   Smartphone,
-  Calendar,
+  DollarSign,
+  BarChart2,
+  Camera,
   LucideIcon,
 } from 'lucide-react';
 
 export interface DefaultLink {
+  id: string;
   name: string;
   url: string;
+  category: string;
   iconName: string;
+  target?: string;
 }
 
-export interface CategoryGroup {
-  category: string;
-  icon: LucideIcon;
+export interface LinkCategory {
+  id: string;
+  label: string;
   links: DefaultLink[];
 }
 
 export const iconMap: Record<string, LucideIcon> = {
-  Building2,
+  Landmark,
   Mail,
   TrendingUp,
-  Wrench,
-  CreditCard,
   Globe,
+  CreditCard,
+  Shield,
+  Home,
+  Calendar,
   Train,
   FileText,
-  Shield,
-  Camera,
   Smartphone,
-  Calendar,
+  DollarSign,
+  BarChart2,
+  Camera,
 };
 
-// Aliases for backward compatibility
-export const ICON_MAP = iconMap;
 export const AVAILABLE_ICONS = Object.keys(iconMap);
 
-export const defaultLinkCategories: CategoryGroup[] = [
+export const defaultLinkCategories: LinkCategory[] = [
   {
-    category: 'BANK',
-    icon: Building2,
+    id: 'BANK',
+    label: 'Banking',
     links: [
       {
+        id: 'sbi',
         name: 'State Bank of India',
         url: 'https://sbi.bank.in/',
-        iconName: 'Building2',
+        category: 'BANK',
+        iconName: 'Landmark',
+        target: '_blank',
       },
       {
+        id: 'pnb',
         name: 'Punjab National Bank',
-        url: 'https://www.pnbindia.in/',
-        iconName: 'Building2',
+        url: 'https://pnbindia.in',
+        category: 'BANK',
+        iconName: 'Landmark',
+        target: '_blank',
       },
       {
+        id: 'ippb',
         name: 'India Post Payments Bank',
-        url: 'https://www.ippbonline.com/',
-        iconName: 'Building2',
+        url: 'https://ippbonline.com',
+        category: 'BANK',
+        iconName: 'Landmark',
+        target: '_blank',
       },
     ],
   },
   {
-    category: 'EMAIL',
-    icon: Mail,
+    id: 'EMAIL',
+    label: 'Email & Calendar',
     links: [
       {
+        id: 'gmail',
         name: 'Gmail',
         url: 'https://mail.google.com',
+        category: 'EMAIL',
         iconName: 'Mail',
+        target: '_blank',
       },
       {
+        id: 'gcalendar',
         name: 'Google Calendar',
         url: 'https://calendar.google.com',
+        category: 'EMAIL',
         iconName: 'Calendar',
+        target: '_blank',
       },
     ],
   },
   {
-    category: 'INVESTMENT',
-    icon: TrendingUp,
+    id: 'INVESTMENT',
+    label: 'Investment',
     links: [
       {
+        id: 'coindcx',
         name: 'CoinDCX',
-        url: 'https://coindcx.com/',
+        url: 'https://coindcx.com',
+        category: 'INVESTMENT',
         iconName: 'TrendingUp',
+        target: '_blank',
       },
       {
+        id: 'etmoney',
         name: 'ET Money',
-        url: 'https://www.etmoney.com/',
-        iconName: 'TrendingUp',
+        url: 'https://etmoney.com',
+        category: 'INVESTMENT',
+        iconName: 'DollarSign',
+        target: '_blank',
       },
       {
+        id: 'groww',
         name: 'Groww',
-        url: 'https://groww.in/',
-        iconName: 'TrendingUp',
+        url: 'https://groww.in',
+        category: 'INVESTMENT',
+        iconName: 'BarChart2',
+        target: '_blank',
       },
     ],
   },
   {
-    category: 'SERVICES',
-    icon: Wrench,
+    id: 'SERVICES',
+    label: 'Services',
     links: [
       {
+        id: 'irctc',
         name: 'IRCTC',
-        url: 'https://www.irctc.co.in/',
+        url: 'https://irctc.co.in',
+        category: 'SERVICES',
         iconName: 'Train',
+        target: '_blank',
       },
       {
+        id: 'digilocker',
         name: 'DigiLocker',
-        url: 'https://www.digilocker.gov.in/',
+        url: 'https://digilocker.gov.in',
+        category: 'SERVICES',
         iconName: 'FileText',
+        target: '_blank',
       },
       {
+        id: 'lic',
         name: 'LIC Digital',
-        url: 'https://lifeinsurance.adityabirlacapital.com/',
+        url: 'https://licindia.in',
+        category: 'SERVICES',
         iconName: 'Shield',
+        target: '_blank',
       },
       {
+        id: 'maadhaar',
         name: 'mAadhaar',
         url: 'https://uidai.gov.in/en/',
+        category: 'SERVICES',
         iconName: 'FileText',
+        target: '_blank',
       },
       {
-        name: 'V380 Pro',
-        url: 'https://play.google.com/store/apps/details?id=com.v380',
-        iconName: 'Camera',
-      },
-      {
+        id: 'xiaomihome',
         name: 'Xiaomi Home',
         url: 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN',
-        iconName: 'Smartphone',
+        category: 'SERVICES',
+        iconName: 'Home',
+        target: '_blank',
+      },
+      {
+        id: 'v380pro',
+        name: 'V380 Pro',
+        url: 'https://v380.cn',
+        category: 'SERVICES',
+        iconName: 'Camera',
+        target: '_blank',
       },
     ],
   },
   {
-    category: 'PAYMENTS',
-    icon: CreditCard,
+    id: 'PAYMENTS',
+    label: 'Payments',
     links: [
       {
+        id: 'googlepay',
         name: 'Google Pay',
-        url: 'https://pay.google.com/',
+        url: 'https://pay.google.com',
+        category: 'PAYMENTS',
         iconName: 'CreditCard',
+        target: '_blank',
       },
       {
+        id: 'phonepe',
         name: 'PhonePe',
-        url: 'https://www.phonepe.com/',
-        iconName: 'CreditCard',
+        url: 'https://phonepe.com',
+        category: 'PAYMENTS',
+        iconName: 'Smartphone',
+        target: '_blank',
       },
     ],
   },
 ];
 
-// Alias for backward compatibility
-export const DEFAULT_CATEGORIES = defaultLinkCategories;
-
-export const ALL_CATEGORIES = defaultLinkCategories.map(c => c.category);
+// Backward-compatible aliases
+export const ICON_MAP = iconMap;
+export const ALL_CATEGORIES = defaultLinkCategories.map((c) => c.id);
+export const DEFAULT_CATEGORIES = ALL_CATEGORIES;

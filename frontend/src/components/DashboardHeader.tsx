@@ -1,133 +1,204 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Menu, Shield, Wifi, ChevronDown, User, Settings, LogOut } from 'lucide-react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile } from '../hooks/useQueries';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useGetProfile } from '../hooks/useQueries';
+import { Menu, ChevronDown, Settings, LogOut, User, Shield } from 'lucide-react';
 import LogoutConfirmationModal from './LogoutConfirmationModal';
 
 interface DashboardHeaderProps {
-  sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
 }
 
-export default function DashboardHeader({ sidebarCollapsed, onToggleSidebar }: DashboardHeaderProps) {
+export default function DashboardHeader({ onToggleSidebar }: DashboardHeaderProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { identity } = useInternetIdentity();
-  const { data: userProfile, isLoading } = useGetCallerUserProfile();
+  const { clear, identity } = useInternetIdentity();
+  const { data: profile } = useGetProfile();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
-  const avatarInitial = userProfile?.name?.charAt(0).toUpperCase() ?? '?';
+  const handleLogout = async () => {
+    await clear();
+    queryClient.clear();
+    navigate({ to: '/login' });
+  };
+
+  const avatarInitial = profile?.name?.charAt(0)?.toUpperCase() ?? '?';
 
   return (
     <>
-      <header className="bg-surface-dark border-b border-military-green-accent/30 h-14 flex items-center px-4 gap-4 z-50 relative">
+      <header
+        className="h-14 flex items-center justify-between px-4 z-30 relative"
+        style={{
+          backgroundColor: 'var(--color-surface-dark)',
+          borderBottom: '1px solid var(--color-military-green-primary)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.6)',
+        }}
+      >
         {/* Left: Toggle + Logo */}
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleSidebar}
-            className="p-1.5 text-gray-400 hover:text-gold-accent transition-colors"
-            aria-label="Toggle sidebar"
+            className="p-2 transition-colors"
+            style={{ color: 'var(--color-text-secondary)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-gold-accent)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
           >
-            <Menu className="w-5 h-5" />
+            <Menu size={20} />
           </button>
-
           <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-gold-accent" />
-            <span className="font-rajdhani font-bold text-gold-accent tracking-widest uppercase text-lg hidden sm:block">
+            <img
+              src="/assets/generated/astravault-shield-logo.dim_256x256.png"
+              alt="AstraVault"
+              className="w-8 h-8"
+            />
+            <span
+              className="font-rajdhani font-bold text-lg tracking-widest uppercase hidden sm:block"
+              style={{ color: 'var(--color-gold-accent)' }}
+            >
               AstraVault
             </span>
           </div>
         </div>
 
-        {/* Center: Secure connection indicator */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-1.5 text-military-green-accent">
-            <Wifi className="w-3 h-3" />
-            <span className="text-xs font-rajdhani tracking-widest uppercase hidden md:block">
-              Secure Connection
-            </span>
-            <div className="w-1.5 h-1.5 rounded-full bg-military-green-accent animate-pulse" />
-          </div>
+        {/* Center: Secure indicator */}
+        <div className="hidden md:flex items-center gap-2">
+          <Shield size={14} style={{ color: 'var(--color-military-green-light)' }} />
+          <span
+            className="font-rajdhani text-xs tracking-widest uppercase"
+            style={{ color: 'var(--color-military-green-light)' }}
+          >
+            Secure Connection
+          </span>
         </div>
 
         {/* Right: Profile dropdown */}
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 p-1.5 hover:bg-military-green-primary/20 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 transition-all"
+            style={{
+              border: '1px solid var(--color-military-green-primary)',
+              color: 'var(--color-text-primary)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-gold-accent)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-military-green-primary)';
+            }}
           >
-            {isLoading ? (
-              <Skeleton className="w-7 h-7 rounded-full" />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-military-green-primary border border-gold-accent/60 flex items-center justify-center">
-                <span className="text-gold-accent text-xs font-rajdhani font-bold">{avatarInitial}</span>
-              </div>
-            )}
-            {isLoading ? (
-              <Skeleton className="w-20 h-4 hidden sm:block" />
-            ) : (
-              <span className="text-gray-300 text-sm font-rajdhani hidden sm:block">
-                {userProfile?.name ?? 'User'}
-              </span>
-            )}
-            <ChevronDown className="w-3 h-3 text-gray-400" />
+            <div
+              className="w-7 h-7 flex items-center justify-center font-rajdhani font-bold text-sm"
+              style={{
+                backgroundColor: 'var(--color-military-green-primary)',
+                color: 'var(--color-gold-accent)',
+              }}
+            >
+              {avatarInitial}
+            </div>
+            <span className="font-inter text-sm hidden sm:block max-w-24 truncate">
+              {profile?.name ?? 'User'}
+            </span>
+            <ChevronDown size={14} style={{ color: 'var(--color-text-muted)' }} />
           </button>
 
-          {/* Dropdown menu */}
           {dropdownOpen && (
             <>
               <div
                 className="fixed inset-0 z-40"
                 onClick={() => setDropdownOpen(false)}
               />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-surface-dark border border-military-green-accent/40 shadow-xl z-50">
-                {/* User info */}
-                <div className="px-3 py-2 border-b border-military-green-accent/20">
-                  <p className="text-gold-accent text-sm font-rajdhani font-bold truncate">
-                    {userProfile?.name ?? 'User'}
+              <div
+                className="absolute right-0 top-full mt-1 w-48 z-50"
+                style={{
+                  backgroundColor: 'var(--color-surface-dark)',
+                  border: '1px solid var(--color-military-green-primary)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.8)',
+                }}
+              >
+                <div
+                  className="px-3 py-2"
+                  style={{ borderBottom: '1px solid var(--color-military-green-muted)' }}
+                >
+                  <p className="font-inter text-xs font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>
+                    {profile?.name}
                   </p>
-                  <p className="text-gray-500 text-xs truncate">
-                    @{userProfile?.username ?? ''}
+                  <p className="font-inter text-xs truncate" style={{ color: 'var(--color-text-muted)' }}>
+                    @{profile?.username}
                   </p>
                 </div>
 
-                {/* Menu items */}
                 <button
-                  onClick={() => { navigate({ to: '/settings' }); setDropdownOpen(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-gray-300 hover:text-gold-accent hover:bg-military-green-primary/20 transition-colors text-sm font-rajdhani"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate({ to: '/' });
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 font-inter text-sm transition-colors text-left"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--color-military-green-muted)';
+                    e.currentTarget.style.color = 'var(--color-gold-accent)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = 'var(--color-text-secondary)';
+                  }}
                 >
-                  <User className="w-3.5 h-3.5" />
+                  <User size={14} />
                   Profile
                 </button>
+
                 <button
-                  onClick={() => { navigate({ to: '/settings' }); setDropdownOpen(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-gray-300 hover:text-gold-accent hover:bg-military-green-primary/20 transition-colors text-sm font-rajdhani"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate({ to: '/settings' });
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 font-inter text-sm transition-colors text-left"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--color-military-green-muted)';
+                    e.currentTarget.style.color = 'var(--color-gold-accent)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = 'var(--color-text-secondary)';
+                  }}
                 >
-                  <Settings className="w-3.5 h-3.5" />
+                  <Settings size={14} />
                   Settings
                 </button>
-                <div className="border-t border-military-green-accent/20" />
-                <button
-                  onClick={() => { setShowLogoutModal(true); setDropdownOpen(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-colors text-sm font-rajdhani"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  Logout
-                </button>
+
+                <div style={{ borderTop: '1px solid var(--color-military-green-muted)' }}>
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      setLogoutModalOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 font-inter text-sm transition-colors text-left"
+                    style={{ color: '#f87171' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(180,40,40,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <LogOut size={14} />
+                    Logout
+                  </button>
+                </div>
               </div>
             </>
           )}
         </div>
       </header>
 
-      {/* Logout confirmation modal */}
       <LogoutConfirmationModal
-        open={showLogoutModal}
-        onClose={() => setShowLogoutModal(false)}
+        open={logoutModalOpen}
+        onOpenChange={setLogoutModalOpen}
+        onConfirm={handleLogout}
       />
     </>
   );

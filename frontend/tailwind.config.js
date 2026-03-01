@@ -2,52 +2,60 @@
 export default {
   darkMode: ['class'],
   content: [
-    './index.html',
-    './src/**/*.{js,ts,jsx,tsx}',
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
   theme: {
     extend: {
       colors: {
-        background: 'oklch(var(--background) / <alpha-value>)',
-        foreground: 'oklch(var(--foreground) / <alpha-value>)',
-        card: {
-          DEFAULT: 'var(--card)',
-          foreground: 'var(--card-foreground)',
-        },
-        popover: {
-          DEFAULT: 'var(--popover)',
-          foreground: 'var(--popover-foreground)',
-        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: 'var(--primary)',
-          foreground: 'var(--primary-foreground)',
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
-          DEFAULT: 'var(--secondary)',
-          foreground: 'var(--secondary-foreground)',
-        },
-        muted: {
-          DEFAULT: 'var(--muted)',
-          foreground: 'var(--muted-foreground)',
-        },
-        accent: {
-          DEFAULT: 'var(--accent)',
-          foreground: 'var(--accent-foreground)',
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
         },
         destructive: {
-          DEFAULT: 'var(--destructive)',
-          foreground: 'var(--destructive-foreground)',
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
         },
-        border: 'var(--border)',
-        input: 'var(--input)',
-        ring: 'var(--ring)',
-        // Military theme custom colors
-        'gold-accent': 'var(--gold-accent)',
-        'gold-highlight': 'var(--gold-highlight)',
-        'military-green-primary': 'var(--military-green-primary)',
-        'military-green-accent': 'var(--military-green-accent)',
-        'surface-darkest': 'var(--surface-darkest)',
-        'surface-dark': 'var(--surface-dark)',
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+        // Military theme tokens
+        'gold-accent': '#c9a84c',
+        'gold-bright': '#d4af37',
+        'gold-muted': '#a8893e',
+        'military-green-primary': '#2d4a1e',
+        'military-green-light': '#3a5c28',
+        'military-green-muted': '#1e3214',
+        'surface-darkest': '#0a0a0a',
+        'surface-dark': '#111111',
+        'surface-mid': '#1a1a1a',
+        'text-primary': '#e8e4d9',
+        'text-secondary': '#a09880',
+        'text-muted': '#6b6355',
       },
       fontFamily: {
         rajdhani: ['Rajdhani', 'sans-serif'],
@@ -55,16 +63,16 @@ export default {
         sans: ['Inter', 'sans-serif'],
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) + 2px)',
-        sm: 'calc(var(--radius) + 4px)',
+        lg: '0px',
+        md: '0px',
+        sm: '0px',
+        DEFAULT: '0px',
       },
       boxShadow: {
-        'military': '0 4px 20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(201, 168, 76, 0.1)',
-        'gold-glow': '0 0 20px rgba(201, 168, 76, 0.2)',
-      },
-      animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'military': '0 2px 8px rgba(0,0,0,0.8), inset 0 1px 0 rgba(201,168,76,0.1)',
+        'military-lg': '0 4px 16px rgba(0,0,0,0.9), inset 0 1px 0 rgba(201,168,76,0.15)',
+        'gold-glow': '0 0 12px rgba(201,168,76,0.3)',
+        'green-glow': '0 0 12px rgba(45,74,30,0.5)',
       },
       keyframes: {
         'accordion-down': {
@@ -75,12 +83,20 @@ export default {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        'pulse-gold': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        },
+      },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        'pulse-gold': 'pulse-gold 2s ease-in-out infinite',
       },
     },
   },
   plugins: [
     require('tailwindcss-animate'),
     require('@tailwindcss/typography'),
-    require('@tailwindcss/container-queries'),
   ],
 };

@@ -1,48 +1,38 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { Outlet } from '@tanstack/react-router';
 import DashboardHeader from './DashboardHeader';
 import AppSidebar from './AppSidebar';
 import DashboardFooter from './DashboardFooter';
 
-interface DashboardLayoutProps {
-  children: React.ReactNode;
-}
-
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-surface-darkest flex flex-col">
-      {/* Header */}
-      <DashboardHeader
-        sidebarCollapsed={sidebarCollapsed}
-        onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
-
-      {/* Body */}
+    <div
+      className="flex flex-col h-screen overflow-hidden"
+      style={{ backgroundColor: 'var(--color-surface-darkest)' }}
+    >
+      <DashboardHeader onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} />
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <AppSidebar collapsed={sidebarCollapsed} />
-
-        {/* Main content */}
         <main
-          className="flex-1 overflow-y-auto relative"
+          className="flex-1 flex flex-col overflow-hidden"
           style={{
-            backgroundImage: `url('/assets/generated/dashboard-bg-texture.dim_1920x1080.png')`,
+            backgroundImage: 'url(/assets/generated/dashboard-bg-texture.dim_1920x1080.png)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            backgroundAttachment: 'fixed',
+            backgroundRepeat: 'no-repeat',
           }}
         >
-          {/* Dark overlay for readability */}
-          <div className="absolute inset-0 bg-surface-darkest/85 pointer-events-none" />
-          <div className="relative z-10 min-h-full">
-            {children}
+          <div
+            className="flex-1 overflow-y-auto"
+            style={{ backgroundColor: 'rgba(10,10,10,0.88)' }}
+          >
+            <Outlet />
           </div>
+          <DashboardFooter />
         </main>
       </div>
-
-      {/* Footer */}
-      <DashboardFooter />
     </div>
   );
 }

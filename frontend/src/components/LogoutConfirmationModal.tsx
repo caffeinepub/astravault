@@ -1,62 +1,69 @@
-import React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useNavigate } from '@tanstack/react-router';
-import { LogOut, Shield } from 'lucide-react';
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
 interface LogoutConfirmationModalProps {
   open: boolean;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
 }
 
-export default function LogoutConfirmationModal({ open, onClose }: LogoutConfirmationModalProps) {
-  const { clear } = useInternetIdentity();
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await clear();
-    queryClient.clear();
-    navigate({ to: '/login' });
-    onClose();
-  };
-
+export default function LogoutConfirmationModal({
+  open,
+  onOpenChange,
+  onConfirm,
+}: LogoutConfirmationModalProps) {
   return (
-    <AlertDialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <AlertDialogContent className="bg-surface-dark border border-military-green-accent/40 max-w-sm">
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent
+        style={{
+          backgroundColor: 'var(--color-surface-dark)',
+          border: '1px solid var(--color-military-green-primary)',
+          borderRadius: '0px',
+        }}
+      >
         <AlertDialogHeader>
-          <div className="flex items-center gap-2 mb-1">
-            <Shield className="w-5 h-5 text-gold-accent" />
-            <AlertDialogTitle className="text-gold-accent font-rajdhani tracking-wider uppercase">
-              Confirm Logout
-            </AlertDialogTitle>
-          </div>
-          <AlertDialogDescription className="text-gray-400 font-rajdhani">
-            Are you sure you want to logout? Your session will be terminated and you will need to authenticate again.
+          <AlertDialogTitle
+            className="font-rajdhani text-xl tracking-wider uppercase"
+            style={{ color: 'var(--color-gold-accent)' }}
+          >
+            Confirm Logout
+          </AlertDialogTitle>
+          <AlertDialogDescription
+            className="font-inter text-sm"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Are you sure you want to log out of AstraVault? Your session will be terminated.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel
-            onClick={onClose}
-            className="bg-transparent border border-military-green-accent/40 text-gray-300 hover:bg-military-green-primary/20 hover:text-gold-accent font-rajdhani tracking-wider uppercase text-xs"
+            className="font-rajdhani font-semibold tracking-wider uppercase text-sm"
+            style={{
+              backgroundColor: 'transparent',
+              border: '1px solid var(--color-military-green-primary)',
+              color: 'var(--color-text-secondary)',
+              borderRadius: '0px',
+            }}
           >
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleLogout}
-            className="bg-red-900/60 border border-red-500/40 text-red-300 hover:bg-red-900 hover:text-red-200 font-rajdhani tracking-wider uppercase text-xs flex items-center gap-2"
+            onClick={onConfirm}
+            className="font-rajdhani font-bold tracking-wider uppercase text-sm"
+            style={{
+              backgroundColor: 'var(--color-gold-accent)',
+              color: 'var(--color-surface-darkest)',
+              borderRadius: '0px',
+            }}
           >
-            <LogOut className="w-3.5 h-3.5" />
             Logout
           </AlertDialogAction>
         </AlertDialogFooter>
