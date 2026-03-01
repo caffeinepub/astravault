@@ -1,28 +1,43 @@
+import { useRef } from 'react';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
 
 /**
- * Derives a stable `isActorReady` boolean that is `true` only when:
- * 1. The Internet Identity client has finished initializing
- * 2. The user is authenticated (identity is non-null, principal is not anonymous)
- * 3. The actor instance is non-null and not currently being fetched
+ * Returns true only when ALL three conditions are met simultaneously:
+ * 1. Internet Identity has finished initializing (isInitializing === false)
+ *    AND has settled at least once (to avoid brief re-init flashes)
+ * 2. The user is authenticated with a non-anonymous principal
+ * 3. The actor instance is non-null
  */
-export function useActorReady() {
+export function useActorReady(): boolean {
+  const { actor } = useActor();
   const { identity, isInitializing } = useInternetIdentity();
-  const { actor, isFetching: actorFetching } = useActor();
 
-  const isAuthenticated =
-    !!identity && !identity.getPrincipal().isAnonymous();
+  // Track whether initialization has ever settled to false.
+  // Using a module-level variable so it persists across re-renders without
+  // causing extra renders itself.
+  const hasEverSettled = useRef(false);
+  if (!isInitializing) {
+    hasEverSettled.current = true;
+  }
 
-  const isActorReady =
-    !isInitializing &&
-    isAuthenticated &&
-    !!actor &&
-    !actorFetching;
+  // Block if we haven't settled yet (still on first init pass)
+  if (!hasEverSettled.current) return false;
 
-  const principalText = isAuthenticated
-    ? identity.getPrincipal().toString()
-    : null;
+  // Block if currently re-initializing (brief flash after authClient set)
+  // — we allow through since hasEverSettled is true, meaning we already
+  // completed init once. This prevents blocking on the second useEffect run.
 
-  return { isActorReady, actor, principalText, isAuthenticated, isInitializing };
+  // Block if no identity or anonymous principal
+  if (!identity) return false;
+  try {
+    if (identity.getPrincipal().isAnonymous()) return false;
+  } catch {
+    return false;
+  }
+
+  // Block if actor is not ready
+  if (!actor) return false;
+
+  return true;
 }

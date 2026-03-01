@@ -1,96 +1,136 @@
-import React from 'react';
-import { Shield, Lock, Zap } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { Shield, Lock } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login, isLoggingIn, isInitializing } = useInternetIdentity();
+  const navigate = useNavigate();
+  const { login, loginStatus, identity, isInitializing } = useInternetIdentity();
+
+  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+  const isLoggingIn = loginStatus === 'logging-in';
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!isInitializing && isAuthenticated) {
+      navigate({ to: '/' });
+    }
+  }, [isAuthenticated, isInitializing, navigate]);
+
+  const handleLogin = async () => {
+    try {
+      await login();
+    } catch (error: any) {
+      console.error('Login error:', error);
+    }
+  };
 
   return (
-    <div
-      className="min-h-screen bg-matte-black flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        backgroundImage: "url('/assets/generated/dashboard-bg-texture.dim_1920x1080.png')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-matte-black/80" />
+    <div className="min-h-screen bg-surface-darkest flex items-center justify-center relative overflow-hidden">
+      {/* Background grid pattern */}
+      <div
+        className="absolute inset-0 opacity-5"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(201, 168, 76, 0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(201, 168, 76, 0.3) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+        }}
+      />
 
-      {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold to-transparent opacity-60" />
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-military-green to-transparent opacity-60" />
+      {/* Corner decorations */}
+      <div className="absolute top-0 left-0 w-32 h-32 border-l-2 border-t-2 border-gold-accent opacity-30" />
+      <div className="absolute top-0 right-0 w-32 h-32 border-r-2 border-t-2 border-gold-accent opacity-30" />
+      <div className="absolute bottom-0 left-0 w-32 h-32 border-l-2 border-b-2 border-gold-accent opacity-30" />
+      <div className="absolute bottom-0 right-0 w-32 h-32 border-r-2 border-b-2 border-gold-accent opacity-30" />
 
-      <div className="relative z-10 w-full max-w-md">
-        {/* Logo & Title */}
-        <div className="text-center mb-10">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-military-green/20 blur-xl scale-150" />
+      {/* Main card */}
+      <div className="relative z-10 w-full max-w-md mx-4">
+        <div className="bg-surface-dark border border-military-green-accent/40 p-8 shadow-2xl">
+          {/* Top accent line */}
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-gold-accent to-transparent" />
+
+          {/* Logo */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="relative mb-4">
               <img
                 src="/assets/generated/astravault-shield-logo.dim_256x256.png"
                 alt="AstraVault Shield"
-                className="relative w-28 h-28 object-contain drop-shadow-2xl"
+                className="w-20 h-20 object-contain"
+                onError={(e) => {
+                  // Fallback to icon if image fails
+                  e.currentTarget.style.display = 'none';
+                }}
               />
+              {/* Fallback shield icon */}
+              <div className="w-20 h-20 flex items-center justify-center border-2 border-gold-accent bg-military-green-primary/20 absolute inset-0">
+                <Shield className="w-10 h-10 text-gold-accent" />
+              </div>
+            </div>
+
+            <h1 className="font-rajdhani text-3xl font-bold text-gold-accent tracking-widest uppercase">
+              AstraVault
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="h-px w-8 bg-gold-accent/40" />
+              <p className="text-gray-400 text-xs tracking-widest uppercase font-rajdhani">
+                Secure Your Digital Vault
+              </p>
+              <div className="h-px w-8 bg-gold-accent/40" />
             </div>
           </div>
-          <h1 className="font-rajdhani text-5xl font-bold tracking-widest uppercase mb-2"
-            style={{ color: 'oklch(0.72 0.12 75)' }}>
-            AstraVault
-          </h1>
-          <p className="text-muted-foreground tracking-widest text-sm uppercase font-rajdhani">
-            Secure Personal Command Center
-          </p>
-        </div>
 
-        {/* Login Card */}
-        <div className="bg-surface-1/90 backdrop-blur-sm border border-military-green/30 rounded-lg p-8 shadow-green">
-          {/* Features */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            {[
-              { icon: Shield, label: 'Encrypted Vault' },
-              { icon: Lock, label: 'Secure Access' },
-              { icon: Zap, label: 'Quick Links' },
-            ].map(({ icon: Icon, label }) => (
-              <div key={label} className="flex flex-col items-center gap-2 text-center">
-                <div className="w-10 h-10 rounded bg-military-green-dim flex items-center justify-center">
-                  <Icon className="w-5 h-5 text-military-green-bright" />
-                </div>
-                <span className="text-xs text-muted-foreground font-rajdhani tracking-wider">{label}</span>
-              </div>
-            ))}
+          {/* Divider */}
+          <div className="border-t border-military-green-accent/30 mb-8" />
+
+          {/* Security badge */}
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <Lock className="w-3 h-3 text-military-green-accent" />
+            <span className="text-military-green-accent text-xs tracking-widest uppercase font-rajdhani">
+              Blockchain-Secured Authentication
+            </span>
+            <Lock className="w-3 h-3 text-military-green-accent" />
           </div>
 
-          <div className="border-t border-border mb-6" />
+          {/* Login button */}
+          <button
+            onClick={handleLogin}
+            disabled={isLoggingIn || isInitializing}
+            className="w-full py-3 px-6 bg-military-green-primary border border-gold-accent/60 text-gold-accent font-rajdhani font-bold text-sm tracking-widest uppercase hover:bg-military-green-accent hover:border-gold-accent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
+          >
+            {isLoggingIn ? (
+              <>
+                <div className="w-4 h-4 border-2 border-gold-accent border-t-transparent rounded-full animate-spin" />
+                <span>Authenticating...</span>
+              </>
+            ) : isInitializing ? (
+              <>
+                <div className="w-4 h-4 border-2 border-gold-accent border-t-transparent rounded-full animate-spin" />
+                <span>Initializing...</span>
+              </>
+            ) : (
+              <>
+                <Shield className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span>Login with Internet Identity</span>
+              </>
+            )}
+          </button>
 
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Authenticate with Internet Identity to access your secure command center.
-            </p>
+          {/* Info text */}
+          <p className="text-center text-gray-500 text-xs mt-4 font-rajdhani tracking-wide">
+            Secured by Internet Computer Protocol
+          </p>
 
-            <button
-              onClick={login}
-              disabled={isLoggingIn || isInitializing}
-              className="w-full flex items-center justify-center gap-3 bg-military-green hover:bg-military-green-bright text-white font-rajdhani font-semibold tracking-widest uppercase py-3.5 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-green hover:shadow-green"
-            >
-              <Shield className="w-5 h-5" />
-              {isLoggingIn ? 'Authenticating...' : isInitializing ? 'Initializing...' : 'Login with Internet Identity'}
-            </button>
-
-            <p className="text-xs text-muted-foreground/60 text-center">
-              Powered by Internet Computer Protocol
-            </p>
-          </div>
+          {/* Bottom accent */}
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-military-green-accent to-transparent" />
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-8 space-y-1">
-          <p className="text-xs font-rajdhani tracking-wider" style={{ color: 'oklch(0.72 0.12 75)' }}>
-            Developed by Shubham Rathore
-          </p>
-          <p className="text-xs font-rajdhani tracking-widest uppercase" style={{ color: 'oklch(0.55 0.09 75)' }}>
-            Rajput – Creating History
-          </p>
+        {/* Classification label */}
+        <div className="text-center mt-4">
+          <span className="text-gray-600 text-xs tracking-widest uppercase font-rajdhani">
+            ◆ Classified Access Only ◆
+          </span>
         </div>
       </div>
     </div>

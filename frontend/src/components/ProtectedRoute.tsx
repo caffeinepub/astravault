@@ -1,51 +1,38 @@
-import React from 'react';
-import { Navigate, Outlet } from '@tanstack/react-router';
+import React, { useRef, useState, useEffect } from 'react';
+import { Outlet, useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useActorReady } from '../hooks/useActorReady';
-import { useGetProfile } from '../hooks/useQueries';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
 import ProfileSetupModal from './ProfileSetupModal';
-import { Loader2, ShieldAlert, RefreshCw } from 'lucide-react';
 
-function FullPageLoader({ message = 'Initializing secure connection...' }: { message?: string }) {
+function MilitaryLoader({ message = 'Loading...' }: { message?: string }) {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
+    <div className="min-h-screen bg-surface-darkest flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="relative">
-          <div className="w-16 h-16 rounded-full border-2 border-primary/20 flex items-center justify-center">
-            <img
-              src="/assets/generated/astravault-shield-logo.dim_256x256.png"
-              alt="AstraVault"
-              className="w-10 h-10 object-contain opacity-60"
-            />
-          </div>
-          <Loader2 className="absolute -top-1 -left-1 w-[72px] h-[72px] text-primary animate-spin" strokeWidth={1.5} />
-        </div>
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground font-mono tracking-widest uppercase">
-            {message}
-          </p>
-        </div>
+        <div className="w-12 h-12 border-2 border-gold-accent border-t-transparent rounded-full animate-spin" />
+        <p className="text-gold-accent font-rajdhani text-sm tracking-widest uppercase">{message}</p>
       </div>
     </div>
   );
 }
 
-function FullPageError({ onRetry }: { onRetry: () => void }) {
+function ErrorScreen({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
-      <div className="flex flex-col items-center gap-4 max-w-sm text-center">
-        <ShieldAlert className="w-12 h-12 text-destructive" />
+    <div className="min-h-screen bg-surface-darkest flex items-center justify-center">
+      <div className="flex flex-col items-center gap-6 text-center px-4">
+        <div className="w-16 h-16 rounded-full border-2 border-red-500 flex items-center justify-center">
+          <span className="text-red-500 text-2xl">!</span>
+        </div>
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-1">Connection Failed</h2>
-          <p className="text-sm text-muted-foreground">
-            Unable to load your profile. Please check your connection and try again.
-          </p>
+          <h2 className="text-gold-accent font-rajdhani text-xl font-bold tracking-wider uppercase mb-2">
+            Connection Error
+          </h2>
+          <p className="text-gray-400 text-sm">Failed to load your profile. Please try again.</p>
         </div>
         <button
           onClick={onRetry}
-          className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded font-medium text-sm hover:bg-primary/90 transition-colors"
+          className="px-6 py-2 bg-military-green-primary border border-gold-accent text-gold-accent font-rajdhani text-sm tracking-widest uppercase hover:bg-military-green-accent transition-colors"
         >
-          <RefreshCw className="w-4 h-4" />
           Retry
         </button>
       </div>
@@ -54,42 +41,54 @@ function FullPageError({ onRetry }: { onRetry: () => void }) {
 }
 
 export default function ProtectedRoute() {
+  const navigate = useNavigate();
   const { identity, isInitializing } = useInternetIdentity();
-  const { isActorReady } = useActorReady();
-  const { data: userProfile, isLoading, isFetched, isError, refetch, profileNotFound } = useGetProfile();
+  const isActorReady = useActorReady();
+  const { data: userProfile, isLoading, isFetched, isError, refetch } = useGetCallerUserProfile();
 
-  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
+  // Track whether initialization has settled at least once so that brief
+  // re-initializing flashes don't cause a redirect to /login.
+  const hasSettledRef = useRef(false);
+  const [initSettled, setInitSettled] = useState(false);
 
-  // 1. Still initializing the identity client — never redirect yet
-  if (isInitializing) {
-    return <FullPageLoader message="Initializing secure connection..." />;
+  useEffect(() => {
+    if (!isInitializing && !hasSettledRef.current) {
+      hasSettledRef.current = true;
+      setInitSettled(true);
+    }
+  }, [isInitializing]);
+
+  // State 1: Still on the very first initialization pass — show loader
+  if (!initSettled) {
+    return <MilitaryLoader message="Securing connection..." />;
   }
 
-  // 2. Identity resolved but user is not authenticated — redirect to login
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+  // State 2: Actor not ready or profile loading (after init settled)
+  if (!isActorReady || isLoading) {
+    return <MilitaryLoader message="Loading profile..." />;
   }
 
-  // 3. Authenticated but actor not ready yet, or profile still loading
-  if (!isActorReady || isLoading || !isFetched) {
-    return <FullPageLoader message="Loading your vault..." />;
+  // State 3: Definitively unauthenticated (initialization complete, no identity)
+  if (!identity || identity.getPrincipal().isAnonymous()) {
+    navigate({ to: '/login' });
+    return <MilitaryLoader message="Redirecting..." />;
   }
 
-  // 4. Profile fetch errored — show retry screen
+  // State 4: Profile fetch error
   if (isError) {
-    return <FullPageError onRetry={() => refetch()} />;
+    return <ErrorScreen onRetry={refetch} />;
   }
 
-  // 5. Profile is null (new user) — show setup modal
-  if (profileNotFound) {
+  // State 5: New user — no profile yet
+  if (isFetched && userProfile === null) {
     return <ProfileSetupModal />;
   }
 
-  // 6. Profile exists — render the protected content
+  // State 6: Authenticated with profile — render protected content
   if (userProfile) {
     return <Outlet />;
   }
 
-  // Fallback: still loading
-  return <FullPageLoader message="Loading your vault..." />;
+  // Fallback loader while waiting for profile data
+  return <MilitaryLoader message="Loading profile..." />;
 }

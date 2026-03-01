@@ -1,207 +1,215 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate } from '@tanstack/react-router';
-import { Shield, Plus, Lock, Settings, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react';
-import { DEFAULT_CATEGORIES, ICON_MAP } from '../data/defaultLinks';
+import { useNavigate } from '@tanstack/react-router';
+import { ExternalLink, Plus, ChevronDown, ChevronRight, LayoutDashboard, Archive, Settings } from 'lucide-react';
 import { useGetCustomLinks } from '../hooks/useQueries';
+import { defaultLinkCategories, iconMap, CategoryGroup } from '../data/defaultLinks';
 import CustomLinkManager from './CustomLinkManager';
-import type { CustomLink } from '../backend';
-
-interface SidebarLinkProps {
-  name: string;
-  url?: string;
-  iconName: string;
-  isNav?: boolean;
-  navPath?: string;
-  isActive?: boolean;
-  onClick?: () => void;
-}
-
-function SidebarLink({ name, url, iconName, isNav, navPath, isActive, onClick }: SidebarLinkProps) {
-  const navigate = useNavigate();
-  const Icon = ICON_MAP[iconName] || ExternalLink;
-
-  const handleClick = () => {
-    if (onClick) { onClick(); return; }
-    if (isNav && navPath) { navigate({ to: navPath }); return; }
-    if (url) { window.open(url, '_blank', 'noopener,noreferrer'); }
-  };
-
-  return (
-    <button
-      onClick={handleClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded text-sm transition-all group ${
-        isActive
-          ? 'bg-military-green text-white shadow-green'
-          : 'text-muted-foreground hover:bg-surface-3 hover:text-foreground'
-      }`}
-    >
-      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-muted-foreground group-hover:text-military-green-bright'}`} />
-      <span className="truncate text-left">{name}</span>
-      {!isNav && url && (
-        <ExternalLink className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-50 flex-shrink-0" />
-      )}
-    </button>
-  );
-}
-
-interface CategorySectionProps {
-  category: string;
-  links: Array<{ name: string; url: string; iconName: string }>;
-  defaultOpen?: boolean;
-}
-
-function CategorySection({ category, links, defaultOpen = true }: CategorySectionProps) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <div className="mb-1">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-rajdhani font-semibold tracking-widest text-gold-dim hover:text-gold uppercase transition-colors"
-      >
-        {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        {category}
-      </button>
-      {open && (
-        <div className="space-y-0.5 ml-1">
-          {links.map(link => (
-            <SidebarLink
-              key={link.name}
-              name={link.name}
-              url={link.url}
-              iconName={link.iconName}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 interface AppSidebarProps {
   collapsed: boolean;
-  onToggle: () => void;
 }
 
-export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
-  const location = useLocation();
-  const [customLinkManagerOpen, setCustomLinkManagerOpen] = useState(false);
+export default function AppSidebar({ collapsed }: AppSidebarProps) {
+  const navigate = useNavigate();
   const { data: customLinks = [] } = useGetCustomLinks();
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['BANK', 'EMAIL']));
+  const [showCustomLinkManager, setShowCustomLinkManager] = useState(false);
 
-  // Merge custom links into categories
-  const customLinksByCategory: Record<string, CustomLink[]> = {};
-  customLinks.forEach(link => {
-    if (!customLinksByCategory[link.category]) {
-      customLinksByCategory[link.category] = [];
-    }
-    customLinksByCategory[link.category].push(link);
-  });
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
 
-  // Get custom categories not in defaults
-  const defaultCategoryNames = DEFAULT_CATEGORIES.map(c => c.category);
-  const extraCategories = Object.keys(customLinksByCategory).filter(
-    cat => !defaultCategoryNames.includes(cat)
-  );
+  if (collapsed) {
+    return (
+      <aside className="w-12 bg-surface-dark border-r border-military-green-accent/30 flex flex-col items-center py-4 gap-3 transition-all duration-200">
+        <button
+          onClick={() => navigate({ to: '/' })}
+          className="p-2 text-gray-400 hover:text-gold-accent transition-colors"
+          title="Dashboard"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => navigate({ to: '/vault' })}
+          className="p-2 text-gray-400 hover:text-gold-accent transition-colors"
+          title="Vault"
+        >
+          <Archive className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => navigate({ to: '/settings' })}
+          className="p-2 text-gray-400 hover:text-gold-accent transition-colors"
+          title="Settings"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+      </aside>
+    );
+  }
 
   return (
     <>
-      <aside
-        className={`flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ${
-          collapsed ? 'w-0 overflow-hidden' : 'w-64'
-        } min-h-0 flex-shrink-0`}
-      >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border">
-          <img
-            src="/assets/generated/astravault-shield-logo.dim_256x256.png"
-            alt="AstraVault"
-            className="w-8 h-8 object-contain flex-shrink-0"
-          />
-          <div className="min-w-0">
-            <h1 className="font-rajdhani font-bold text-gold tracking-widest text-base uppercase leading-none">
-              AstraVault
-            </h1>
-            <p className="text-muted-foreground text-xs tracking-wider mt-0.5">Command Center</p>
+      <aside className="w-56 bg-surface-dark border-r border-military-green-accent/30 flex flex-col overflow-y-auto transition-all duration-200">
+        {/* Navigation links */}
+        <nav className="p-2 border-b border-military-green-accent/20">
+          <button
+            onClick={() => navigate({ to: '/' })}
+            className="w-full flex items-center gap-2 px-3 py-2 text-gray-300 hover:text-gold-accent hover:bg-military-green-primary/20 transition-colors text-sm font-rajdhani tracking-wide"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboard
+          </button>
+          <button
+            onClick={() => navigate({ to: '/vault' })}
+            className="w-full flex items-center gap-2 px-3 py-2 text-gray-300 hover:text-gold-accent hover:bg-military-green-primary/20 transition-colors text-sm font-rajdhani tracking-wide"
+          >
+            <Archive className="w-4 h-4" />
+            Vault
+          </button>
+          <button
+            onClick={() => navigate({ to: '/settings' })}
+            className="w-full flex items-center gap-2 px-3 py-2 text-gray-300 hover:text-gold-accent hover:bg-military-green-primary/20 transition-colors text-sm font-rajdhani tracking-wide"
+          >
+            <Settings className="w-4 h-4" />
+            Settings
+          </button>
+        </nav>
+
+        {/* Quick Links section */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-3 py-2">
+            <p className="text-military-green-accent text-xs font-rajdhani tracking-widest uppercase font-bold">
+              Quick Links
+            </p>
           </div>
-        </div>
 
-        {/* Navigation */}
-        <div className="px-3 py-3 border-b border-sidebar-border space-y-0.5">
-          <SidebarLink
-            name="Dashboard"
-            iconName="Shield"
-            isNav
-            navPath="/"
-            isActive={location.pathname === '/'}
-          />
-          <SidebarLink
-            name="Private Vault"
-            iconName="Lock"
-            isNav
-            navPath="/vault"
-            isActive={location.pathname === '/vault'}
-          />
-          <SidebarLink
-            name="Settings"
-            iconName="Settings"
-            isNav
-            navPath="/settings"
-            isActive={location.pathname === '/settings'}
-          />
-        </div>
+          {/* Default link categories */}
+          {defaultLinkCategories.map((categoryGroup: CategoryGroup) => {
+            const isExpanded = expandedCategories.has(categoryGroup.category);
+            const CategoryIcon = categoryGroup.icon;
 
-        {/* Scrollable Links */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 space-y-1">
-          {/* Default categories */}
-          {DEFAULT_CATEGORIES.map(cat => {
-            const allLinks = [
-              ...cat.links,
-              ...(customLinksByCategory[cat.category] || []).map(cl => ({
-                name: cl.name,
-                url: cl.url,
-                iconName: cl.iconName,
-              })),
-            ];
+            // Get custom links for this category
+            const categoryCustomLinks = customLinks.filter(
+              link => link.category === categoryGroup.category
+            );
+
             return (
-              <CategorySection
-                key={cat.category}
-                category={cat.category}
-                links={allLinks}
-              />
+              <div key={categoryGroup.category} className="mb-1">
+                {/* Category header */}
+                <button
+                  onClick={() => toggleCategory(categoryGroup.category)}
+                  className="w-full flex items-center justify-between px-3 py-1.5 text-military-green-accent hover:text-gold-accent transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <CategoryIcon className="w-3 h-3" />
+                    <span className="text-xs font-rajdhani tracking-widest uppercase font-bold">
+                      {categoryGroup.category}
+                    </span>
+                  </div>
+                  {isExpanded ? (
+                    <ChevronDown className="w-3 h-3" />
+                  ) : (
+                    <ChevronRight className="w-3 h-3" />
+                  )}
+                </button>
+
+                {/* Category links */}
+                {isExpanded && (
+                  <div className="ml-2">
+                    {categoryGroup.links.map((link) => {
+                      const LinkIcon = iconMap[link.iconName] || ExternalLink;
+                      return (
+                        <a
+                          key={link.name}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:text-gold-accent hover:bg-military-green-primary/10 transition-colors text-xs font-rajdhani"
+                        >
+                          <LinkIcon className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{link.name}</span>
+                          <ExternalLink className="w-2.5 h-2.5 ml-auto flex-shrink-0 opacity-50" />
+                        </a>
+                      );
+                    })}
+
+                    {/* Custom links for this category */}
+                    {categoryCustomLinks.map((link) => {
+                      const LinkIcon = iconMap[link.iconName] || ExternalLink;
+                      return (
+                        <a
+                          key={String(link.id)}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:text-gold-accent hover:bg-military-green-primary/10 transition-colors text-xs font-rajdhani"
+                        >
+                          <LinkIcon className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{link.name}</span>
+                          <ExternalLink className="w-2.5 h-2.5 ml-auto flex-shrink-0 opacity-50" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
 
-          {/* Extra custom categories */}
-          {extraCategories.map(cat => (
-            <CategorySection
-              key={cat}
-              category={cat}
-              links={customLinksByCategory[cat].map(cl => ({
-                name: cl.name,
-                url: cl.url,
-                iconName: cl.iconName,
-              }))}
-              defaultOpen={false}
-            />
-          ))}
-        </div>
+          {/* Custom links not in any default category */}
+          {customLinks.filter(link =>
+            !defaultLinkCategories.some(cat => cat.category === link.category)
+          ).length > 0 && (
+            <div className="mb-1">
+              <div className="px-3 py-1.5 text-military-green-accent">
+                <span className="text-xs font-rajdhani tracking-widest uppercase font-bold">Custom</span>
+              </div>
+              {customLinks
+                .filter(link => !defaultLinkCategories.some(cat => cat.category === link.category))
+                .map((link) => {
+                  const LinkIcon = iconMap[link.iconName] || ExternalLink;
+                  return (
+                    <a
+                      key={String(link.id)}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:text-gold-accent hover:bg-military-green-primary/10 transition-colors text-xs font-rajdhani ml-2"
+                    >
+                      <LinkIcon className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{link.name}</span>
+                      <ExternalLink className="w-2.5 h-2.5 ml-auto flex-shrink-0 opacity-50" />
+                    </a>
+                  );
+                })}
+            </div>
+          )}
 
-        {/* Add Link Button */}
-        <div className="px-3 py-3 border-t border-sidebar-border">
-          <button
-            onClick={() => setCustomLinkManagerOpen(true)}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded border border-dashed border-military-green/40 text-military-green-bright hover:bg-military-green-dim hover:border-military-green text-sm font-rajdhani font-semibold tracking-wider uppercase transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Add Link
-          </button>
+          {/* Add link button */}
+          <div className="p-2 border-t border-military-green-accent/20 mt-2">
+            <button
+              onClick={() => setShowCustomLinkManager(true)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-military-green-accent hover:text-gold-accent hover:bg-military-green-primary/20 transition-colors text-xs font-rajdhani tracking-widest uppercase border border-military-green-accent/30 hover:border-gold-accent/40"
+            >
+              <Plus className="w-3 h-3" />
+              + Add Link
+            </button>
+          </div>
         </div>
       </aside>
 
-      <CustomLinkManager
-        open={customLinkManagerOpen}
-        onOpenChange={setCustomLinkManagerOpen}
-      />
+      {/* Custom Link Manager Modal */}
+      {showCustomLinkManager && (
+        <CustomLinkManager onClose={() => setShowCustomLinkManager(false)} />
+      )}
     </>
   );
 }

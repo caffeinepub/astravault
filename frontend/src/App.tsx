@@ -1,127 +1,105 @@
-import React from 'react';
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-  Outlet,
-  Navigate,
-} from '@tanstack/react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useRef, useState, useEffect } from 'react';
+import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
-import { Loader2 } from 'lucide-react';
-
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import VaultPage from './pages/VaultPage';
 import SettingsPage from './pages/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import { Shield } from 'lucide-react';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
-// ── Loading screen used by AuthGuard ─────────────────────────────────────────
-function FullPageLoader() {
+// ── Military Loading Spinner ─────────────────────────────────────────────────
+function MilitaryLoader({ message = 'Securing Connection...' }: { message?: string }) {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative">
-          <div className="w-16 h-16 rounded-full border-2 border-primary/20 flex items-center justify-center">
-            <img
-              src="/assets/generated/astravault-shield-logo.dim_256x256.png"
-              alt="AstraVault"
-              className="w-10 h-10 object-contain opacity-60"
-            />
-          </div>
-          <Loader2
-            className="absolute -top-1 -left-1 w-[72px] h-[72px] text-primary animate-spin"
-            strokeWidth={1.5}
-          />
+    <div className="min-h-screen bg-surface-darkest flex flex-col items-center justify-center gap-6">
+      <div className="relative">
+        <div className="w-20 h-20 border-4 border-military-green-primary border-t-gold-accent rounded-full animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Shield className="w-8 h-8 text-gold-accent" />
         </div>
-        <p className="text-sm text-muted-foreground font-mono tracking-widest uppercase">
-          Initializing secure connection...
+      </div>
+      <div className="text-center">
+        <p className="text-gold-accent font-rajdhani text-lg font-semibold tracking-widest uppercase">
+          {message}
+        </p>
+        <p className="text-military-green-primary font-rajdhani text-sm tracking-wider mt-1 opacity-70">
+          AstraVault
         </p>
       </div>
     </div>
   );
 }
 
-// ── Auth guard for the login route ────────────────────────────────────────────
-function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { identity, isInitializing } = useInternetIdentity();
-
-  // Never redirect while the identity client is still starting up
-  if (isInitializing) {
-    return <FullPageLoader />;
-  }
-
-  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
-
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" />;
-  }
-
-  return <>{children}</>;
-}
-
-// ── Root layout ───────────────────────────────────────────────────────────────
+// ── Root Layout with Auth Guard ──────────────────────────────────────────────
+// Shows the military loader while Internet Identity is initializing.
+// Uses a "settled" flag so that once initialization completes once, brief
+// re-initializing flashes (caused by the authClient dependency loop in the
+// provider) do not re-show the loader screen.
 function RootLayout() {
+  const { isInitializing } = useInternetIdentity();
+  // Once initialization has settled to false at least once, we never block again.
+  const hasSettledRef = useRef(false);
+  const [settled, setSettled] = useState(false);
+
+  useEffect(() => {
+    if (!isInitializing && !hasSettledRef.current) {
+      hasSettledRef.current = true;
+      setSettled(true);
+    }
+  }, [isInitializing]);
+
+  // Only show the loader on the very first initialization pass.
+  if (!settled && isInitializing) {
+    return <MilitaryLoader message="Securing Connection..." />;
+  }
+
   return <Outlet />;
 }
 
-// ── Routes ────────────────────────────────────────────────────────────────────
-const rootRoute = createRootRoute({ component: RootLayout });
+// ── Route Tree ───────────────────────────────────────────────────────────────
+const rootRoute = createRootRoute({
+  component: RootLayout,
+});
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
-  component: () => (
-    <AuthGuard>
-      <LoginPage />
-    </AuthGuard>
-  ),
+  component: LoginPage,
 });
 
-const protectedRoute = createRoute({
+// ProtectedRoute is a layout component that uses <Outlet /> internally.
+// It handles its own auth checks, profile loading, and profile setup modal.
+const protectedLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'protected',
   component: ProtectedRoute,
 });
 
 const dashboardRoute = createRoute({
-  getParentRoute: () => protectedRoute,
-  path: '/dashboard',
+  getParentRoute: () => protectedLayoutRoute,
+  path: '/',
   component: DashboardPage,
 });
 
 const vaultRoute = createRoute({
-  getParentRoute: () => protectedRoute,
+  getParentRoute: () => protectedLayoutRoute,
   path: '/vault',
   component: VaultPage,
 });
 
 const settingsRoute = createRoute({
-  getParentRoute: () => protectedRoute,
+  getParentRoute: () => protectedLayoutRoute,
   path: '/settings',
   component: SettingsPage,
 });
 
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/',
-  component: () => <Navigate to="/dashboard" />,
-});
-
 const routeTree = rootRoute.addChildren([
-  indexRoute,
   loginRoute,
-  protectedRoute.addChildren([dashboardRoute, vaultRoute, settingsRoute]),
+  protectedLayoutRoute.addChildren([
+    dashboardRoute,
+    vaultRoute,
+    settingsRoute,
+  ]),
 ]);
 
 const router = createRouter({ routeTree });
@@ -132,11 +110,7 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// ── App ───────────────────────────────────────────────────────────────────────
+// ── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  );
+  return <RouterProvider router={router} />;
 }

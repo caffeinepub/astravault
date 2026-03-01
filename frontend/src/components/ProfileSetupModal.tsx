@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useActor } from '../hooks/useActor';
-import { Shield, Eye, EyeOff, Loader2, Lock } from 'lucide-react';
-import { hashPassword } from '../utils/encryption';
+import { useRegisterUser } from '../hooks/useQueries';
+import { Shield, Eye, EyeOff } from 'lucide-react';
 
 export default function ProfileSetupModal() {
-  const { identity } = useInternetIdentity();
-  const { actor } = useActor();
   const queryClient = useQueryClient();
+  const { identity } = useInternetIdentity();
+  const registerUser = useRegisterUser();
 
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
@@ -16,7 +15,6 @@ export default function ProfileSetupModal() {
   const [vaultPassword, setVaultPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
@@ -25,134 +23,130 @@ export default function ProfileSetupModal() {
     e.preventDefault();
     setError('');
 
-    if (!name.trim()) {
-      setError('Name is required.');
-      return;
-    }
-    if (!username.trim()) {
-      setError('Username is required.');
-      return;
-    }
-    if (vaultPassword.length < 8) {
-      setError('Vault password must be at least 8 characters.');
-      return;
-    }
-    if (vaultPassword !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (!actor) {
-      setError('Connection not ready. Please try again.');
-      return;
-    }
+    if (!name.trim()) { setError('Name is required'); return; }
+    if (!username.trim()) { setError('Username is required'); return; }
+    if (username.length < 3) { setError('Username must be at least 3 characters'); return; }
+    if (!vaultPassword) { setError('Vault password is required'); return; }
+    if (vaultPassword.length < 6) { setError('Vault password must be at least 6 characters'); return; }
+    if (vaultPassword !== confirmPassword) { setError('Passwords do not match'); return; }
 
-    setIsSubmitting(true);
     try {
-      const vaultPasswordHash = await hashPassword(vaultPassword);
-      await actor.registerUser(
-        name.trim(),
-        username.trim(),
-        email.trim() || null,
-        vaultPasswordHash,
-      );
+      // Hash the vault password using SHA-256
+      const encoder = new TextEncoder();
+      const data = encoder.encode(vaultPassword);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-      // Invalidate all profile-related queries so ProtectedRoute re-evaluates
-      await queryClient.invalidateQueries({ queryKey: ['profile', principalText] });
+      await registerUser.mutateAsync({
+        name: name.trim(),
+        username: username.trim(),
+        email: email.trim() || null,
+        vaultPasswordHash: hashHex,
+      });
+
+      // Invalidate and refetch profile queries
       await queryClient.invalidateQueries({ queryKey: ['currentUserProfile', principalText] });
-      await queryClient.refetchQueries({ queryKey: ['profile', principalText] });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg.includes('already exists') ? 'Account already exists.' : `Registration failed: ${msg}`);
-    } finally {
-      setIsSubmitting(false);
+      await queryClient.refetchQueries({ queryKey: ['currentUserProfile', principalText] });
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please try again.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 border border-primary/30 mb-4">
-            <Shield className="w-8 h-8 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Create Your Vault</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            Set up your secure profile to get started
-          </p>
-        </div>
+    <div className="min-h-screen bg-surface-darkest flex items-center justify-center p-4">
+      {/* Background grid */}
+      <div
+        className="absolute inset-0 opacity-5"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(201, 168, 76, 0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(201, 168, 76, 0.3) 1px, transparent 1px)
+          `,
+          backgroundSize: '40px 40px',
+        }}
+      />
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+      <div className="relative z-10 w-full max-w-md">
+        <div className="bg-surface-dark border border-military-green-accent/40 p-8 shadow-2xl">
+          {/* Top accent */}
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-gold-accent to-transparent" />
+
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-military-green-primary border border-gold-accent/60 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-gold-accent" />
+            </div>
+            <div>
+              <h2 className="font-rajdhani text-xl font-bold text-gold-accent tracking-wider uppercase">
+                Setup Profile
+              </h2>
+              <p className="text-gray-500 text-xs font-rajdhani tracking-wide">
+                Initialize your secure vault
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name */}
             <div>
-              <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Full Name <span className="text-destructive">*</span>
+              <label className="block text-xs font-rajdhani tracking-widest uppercase text-military-green-accent mb-1">
+                Full Name *
               </label>
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={e => setName(e.target.value)}
                 placeholder="Enter your full name"
-                className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
-                disabled={isSubmitting}
-                required
+                className="w-full bg-surface-darkest border border-military-green-accent/40 text-gray-200 px-3 py-2 text-sm font-rajdhani focus:outline-none focus:border-gold-accent/60 placeholder-gray-600"
               />
             </div>
 
             {/* Username */}
             <div>
-              <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Username <span className="text-destructive">*</span>
+              <label className="block text-xs font-rajdhani tracking-widest uppercase text-military-green-accent mb-1">
+                Username *
               </label>
               <input
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={e => setUsername(e.target.value)}
                 placeholder="Choose a username"
-                className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
-                disabled={isSubmitting}
-                required
+                className="w-full bg-surface-darkest border border-military-green-accent/40 text-gray-200 px-3 py-2 text-sm font-rajdhani focus:outline-none focus:border-gold-accent/60 placeholder-gray-600"
               />
             </div>
 
-            {/* Email (optional) */}
+            {/* Email */}
             <div>
-              <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Email <span className="text-muted-foreground font-normal normal-case">(optional)</span>
+              <label className="block text-xs font-rajdhani tracking-widest uppercase text-military-green-accent mb-1">
+                Email (Optional)
               </label>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
-                disabled={isSubmitting}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full bg-surface-darkest border border-military-green-accent/40 text-gray-200 px-3 py-2 text-sm font-rajdhani focus:outline-none focus:border-gold-accent/60 placeholder-gray-600"
               />
             </div>
 
             {/* Vault Password */}
             <div>
-              <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                <Lock className="inline w-3 h-3 mr-1" />
-                Vault Password <span className="text-destructive">*</span>
+              <label className="block text-xs font-rajdhani tracking-widest uppercase text-military-green-accent mb-1">
+                Vault Password *
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={vaultPassword}
-                  onChange={(e) => setVaultPassword(e.target.value)}
-                  placeholder="Min. 8 characters"
-                  className="w-full bg-background border border-border rounded px-3 py-2 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
-                  disabled={isSubmitting}
-                  required
+                  onChange={e => setVaultPassword(e.target.value)}
+                  placeholder="Create vault password"
+                  className="w-full bg-surface-darkest border border-military-green-accent/40 text-gray-200 px-3 py-2 pr-10 text-sm font-rajdhani focus:outline-none focus:border-gold-accent/60 placeholder-gray-600"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  tabIndex={-1}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gold-accent transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -161,50 +155,48 @@ export default function ProfileSetupModal() {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Confirm Vault Password <span className="text-destructive">*</span>
+              <label className="block text-xs font-rajdhani tracking-widest uppercase text-military-green-accent mb-1">
+                Confirm Password *
               </label>
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Repeat your vault password"
-                className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
-                disabled={isSubmitting}
-                required
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Confirm vault password"
+                className="w-full bg-surface-darkest border border-military-green-accent/40 text-gray-200 px-3 py-2 text-sm font-rajdhani focus:outline-none focus:border-gold-accent/60 placeholder-gray-600"
               />
             </div>
 
             {/* Error */}
             {error && (
-              <div className="bg-destructive/10 border border-destructive/30 rounded px-3 py-2 text-sm text-destructive">
-                {error}
+              <div className="border border-red-500/40 bg-red-900/20 px-3 py-2">
+                <p className="text-red-400 text-xs font-rajdhani">{error}</p>
               </div>
             )}
-          </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-2.5 rounded font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Creating Vault...
-              </>
-            ) : (
-              <>
-                <Shield className="w-4 h-4" />
-                Create Secure Vault
-              </>
-            )}
-          </button>
-        </form>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={registerUser.isPending}
+              className="w-full py-3 bg-military-green-primary border border-gold-accent/60 text-gold-accent font-rajdhani font-bold text-sm tracking-widest uppercase hover:bg-military-green-accent hover:border-gold-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {registerUser.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-gold-accent border-t-transparent rounded-full animate-spin" />
+                  Setting up...
+                </>
+              ) : (
+                <>
+                  <Shield className="w-4 h-4" />
+                  Initialize Vault
+                </>
+              )}
+            </button>
+          </form>
 
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          Your vault is encrypted and stored on the Internet Computer blockchain.
-        </p>
+          {/* Bottom accent */}
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-military-green-accent to-transparent" />
+        </div>
       </div>
     </div>
   );

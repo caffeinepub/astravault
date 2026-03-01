@@ -2,27 +2,21 @@ import {
   Building2,
   Mail,
   TrendingUp,
-  Train,
-  Shield,
-  FolderOpen,
-  Heart,
-  Camera,
-  Home,
+  Wrench,
   CreditCard,
+  Globe,
+  Train,
+  FileText,
+  Shield,
+  Camera,
   Smartphone,
-  Landmark,
-  Bitcoin,
-  BarChart3,
-  Sprout,
-  QrCode,
   Calendar,
-  type LucideIcon,
+  LucideIcon,
 } from 'lucide-react';
 
 export interface DefaultLink {
   name: string;
   url: string;
-  category: string;
   iconName: string;
 }
 
@@ -32,75 +26,139 @@ export interface CategoryGroup {
   links: DefaultLink[];
 }
 
-export const ICON_MAP: Record<string, LucideIcon> = {
+export const iconMap: Record<string, LucideIcon> = {
   Building2,
   Mail,
   TrendingUp,
-  Train,
-  Shield,
-  FolderOpen,
-  Heart,
-  Camera,
-  Home,
+  Wrench,
   CreditCard,
+  Globe,
+  Train,
+  FileText,
+  Shield,
+  Camera,
   Smartphone,
-  Landmark,
-  Bitcoin,
-  BarChart3,
-  Sprout,
-  QrCode,
   Calendar,
 };
 
-export const DEFAULT_CATEGORIES: CategoryGroup[] = [
+// Aliases for backward compatibility
+export const ICON_MAP = iconMap;
+export const AVAILABLE_ICONS = Object.keys(iconMap);
+
+export const defaultLinkCategories: CategoryGroup[] = [
   {
     category: 'BANK',
-    icon: Landmark,
+    icon: Building2,
     links: [
-      { name: 'State Bank of India', url: 'https://sbi.bank.in/', category: 'BANK', iconName: 'Landmark' },
-      { name: 'Punjab National Bank', url: 'https://www.pnbindia.in', category: 'BANK', iconName: 'Building2' },
-      { name: 'India Post Payments Bank', url: 'https://www.ippbonline.com', category: 'BANK', iconName: 'Building2' },
+      {
+        name: 'State Bank of India',
+        url: 'https://sbi.bank.in/',
+        iconName: 'Building2',
+      },
+      {
+        name: 'Punjab National Bank',
+        url: 'https://www.pnbindia.in/',
+        iconName: 'Building2',
+      },
+      {
+        name: 'India Post Payments Bank',
+        url: 'https://www.ippbonline.com/',
+        iconName: 'Building2',
+      },
     ],
   },
   {
     category: 'EMAIL',
     icon: Mail,
     links: [
-      { name: 'Gmail', url: 'https://mail.google.com', category: 'EMAIL', iconName: 'Mail' },
-      { name: 'Google Calendar', url: 'https://calendar.google.com', category: 'EMAIL', iconName: 'Calendar' },
+      {
+        name: 'Gmail',
+        url: 'https://mail.google.com',
+        iconName: 'Mail',
+      },
+      {
+        name: 'Google Calendar',
+        url: 'https://calendar.google.com',
+        iconName: 'Calendar',
+      },
     ],
   },
   {
     category: 'INVESTMENT',
     icon: TrendingUp,
     links: [
-      { name: 'CoinDCX', url: 'https://coindcx.com', category: 'INVESTMENT', iconName: 'Bitcoin' },
-      { name: 'ET Money', url: 'https://www.etmoney.com', category: 'INVESTMENT', iconName: 'BarChart3' },
-      { name: 'Groww', url: 'https://groww.in', category: 'INVESTMENT', iconName: 'Sprout' },
+      {
+        name: 'CoinDCX',
+        url: 'https://coindcx.com/',
+        iconName: 'TrendingUp',
+      },
+      {
+        name: 'ET Money',
+        url: 'https://www.etmoney.com/',
+        iconName: 'TrendingUp',
+      },
+      {
+        name: 'Groww',
+        url: 'https://groww.in/',
+        iconName: 'TrendingUp',
+      },
     ],
   },
   {
     category: 'SERVICES',
-    icon: Shield,
+    icon: Wrench,
     links: [
-      { name: 'IRCTC', url: 'https://www.irctc.co.in', category: 'SERVICES', iconName: 'Train' },
-      { name: 'mAadhaar', url: 'https://uidai.gov.in/en/', category: 'SERVICES', iconName: 'Smartphone' },
-      { name: 'DigiLocker', url: 'https://www.digilocker.gov.in', category: 'SERVICES', iconName: 'FolderOpen' },
-      { name: 'LIC Digital', url: 'https://licindia.in', category: 'SERVICES', iconName: 'Heart' },
-      { name: 'V380 Pro', url: 'https://www.v380.cn', category: 'SERVICES', iconName: 'Camera' },
-      { name: 'Xiaomi Home', url: 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN', category: 'SERVICES', iconName: 'Home' },
+      {
+        name: 'IRCTC',
+        url: 'https://www.irctc.co.in/',
+        iconName: 'Train',
+      },
+      {
+        name: 'DigiLocker',
+        url: 'https://www.digilocker.gov.in/',
+        iconName: 'FileText',
+      },
+      {
+        name: 'LIC Digital',
+        url: 'https://lifeinsurance.adityabirlacapital.com/',
+        iconName: 'Shield',
+      },
+      {
+        name: 'mAadhaar',
+        url: 'https://uidai.gov.in/en/',
+        iconName: 'FileText',
+      },
+      {
+        name: 'V380 Pro',
+        url: 'https://play.google.com/store/apps/details?id=com.v380',
+        iconName: 'Camera',
+      },
+      {
+        name: 'Xiaomi Home',
+        url: 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN',
+        iconName: 'Smartphone',
+      },
     ],
   },
   {
     category: 'PAYMENTS',
     icon: CreditCard,
     links: [
-      { name: 'Google Pay', url: 'https://pay.google.com', category: 'PAYMENTS', iconName: 'QrCode' },
-      { name: 'PhonePe', url: 'https://www.phonepe.com', category: 'PAYMENTS', iconName: 'CreditCard' },
+      {
+        name: 'Google Pay',
+        url: 'https://pay.google.com/',
+        iconName: 'CreditCard',
+      },
+      {
+        name: 'PhonePe',
+        url: 'https://www.phonepe.com/',
+        iconName: 'CreditCard',
+      },
     ],
   },
 ];
 
-export const ALL_CATEGORIES = DEFAULT_CATEGORIES.map(c => c.category);
+// Alias for backward compatibility
+export const DEFAULT_CATEGORIES = defaultLinkCategories;
 
-export const AVAILABLE_ICONS = Object.keys(ICON_MAP);
+export const ALL_CATEGORIES = defaultLinkCategories.map(c => c.category);

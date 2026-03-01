@@ -1,77 +1,62 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix persistent profile loading / infinite spinner blocking dashboard access",
+  "title": "Fix 'Securing Connection' hang — correct InternetIdentityProvider URL and AuthGuard initialization guard",
   "requirements": [
     {
-      "id": "REQ-20",
-      "summary": "Create a `useActorReady.ts` wrapper hook that derives `isActorReady` from the existing `useActor` hook, ensuring it returns `true` only when both the Internet Identity principal is fully resolved and non-anonymous, and the actor instance is confirmed non-null",
+      "id": "REQ-42",
+      "summary": "Configure InternetIdentityProvider with correct environment-specific identity provider URL to prevent Internet Identity iframe hang",
       "acceptanceCriteria": [
-        "`isActorReady` is `false` while the identity is initializing or the actor is null.",
-        "`isActorReady` becomes `true` only when the actor is non-null and the principal is authenticated and resolved.",
-        "No existing immutable file is modified."
+        "The `InternetIdentityProvider` receives the correct `identityProvider` URL for the active environment (local vs. production).",
+        "No hardcoded unreachable URL is present in the provider configuration.",
+        "The Internet Identity iframe loads without hanging on 'Securing Connection' in both local and production environments.",
+        "The environment selection logic uses a reliable build-time or runtime flag (e.g., `import.meta.env.DEV` or `DFX_NETWORK`)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useActorReady.ts",
-          "operation": "create",
-          "description": "Create a new hook that wraps `useActor` and `useInternetIdentity` to derive and export a stable `isActorReady` boolean. The hook returns `true` only when: (1) the Internet Identity client has finished initializing (`isInitializing === false`), (2) the user is authenticated (identity is non-null and principal is not anonymous), and (3) the actor instance from `useActor` is non-null. Export the `isActorReady` flag along with the actor instance for consumer convenience."
+          "path": "frontend/src/hooks/useInternetIdentity.ts",
+          "operation": "modify",
+          "description": "Update the InternetIdentityProvider configuration to use the correct identityProvider URL based on environment. For local development (when `import.meta.env.DEV` is true), use `http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943`. For production, use `https://identity.ic0.app`. Remove any hardcoded unreachable or malformed URLs that cause the Internet Identity iframe to hang on 'Securing Connection'. Add environment detection logic that reliably selects the correct URL at build time or runtime."
         }
       ]
     },
     {
-      "id": "REQ-21",
-      "summary": "Rewrite `useQueries.ts` to gate all query hooks (especially `useGetProfile`) on `isActorReady`, include the authenticated principal in cache keys, and treat `null` backend responses as 'profile not found' rather than errors",
+      "id": "REQ-43",
+      "summary": "Prevent AuthGuard from making routing decisions while Internet Identity is still initializing",
       "acceptanceCriteria": [
-        "`useGetProfile` does not fire until `isActorReady` is `true`.",
-        "Cache key includes the principal so re-authentication triggers a fresh fetch.",
-        "A `null` backend response sets a `profileNotFound` flag / returns `data: null` without entering the error state.",
-        "A thrown error sets `isError: true` and surfaces a retry mechanism."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Refactor all query hooks to import and use `isActorReady` from the new `useActorReady` hook. For `useGetProfile` (which calls `getCallerUserProfile`), change the `enabled` flag to strictly gate on `isActorReady === true`, and update the cache key to `['profile', principalText]` (derive `principalText` from the identity hook). Modify the `queryFn` so that a `null` return value from the backend is treated as valid data (profile not found / new user) and does not trigger the error state; only thrown exceptions should set `isError: true`. Apply the same `isActorReady` gating to all other query hooks (custom links, vault notes, etc.)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-22",
-      "summary": "Rewrite `ProtectedRoute.tsx` to implement a strict state machine that prevents premature redirects, shows a full-page loading skeleton while `isActorReady` or profile query is loading, renders an error state with a Retry button on fetch failure, redirects to `/login` only when definitively unauthenticated, shows `ProfileSetupModal` for new users, and renders children when profile data is present",
-      "acceptanceCriteria": [
-        "No redirect to `/login` occurs while identity or actor is still initializing.",
-        "A full-page spinner is visible until both actor and profile query resolve.",
-        "A 'Retry' button is shown when the profile fetch errors.",
-        "New users see `ProfileSetupModal` instead of a redirect.",
-        "Authenticated users with a profile see the dashboard without an infinite spinner."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Ensure `useGetProfile` exports both the standard React Query return values (`data`, `isLoading`, `isError`, `refetch`) and a derived `profileNotFound` boolean (true when `data === null` and `isError === false`). This flag will be consumed by `ProtectedRoute` to distinguish 'new user' from 'error' states."
-        },
-        {
-          "path": "frontend/src/components/ProtectedRoute.tsx",
-          "operation": "modify",
-          "description": "Rewrite the component to import `isActorReady` from `useActorReady` and `useGetProfile` from `useQueries`. Implement the following state machine: (1) If `isActorReady === false` OR profile query `isLoading === true`, render a full-page military-themed loading skeleton (gold spinner on matte black background, no redirect). (2) If profile query `isError === true`, render a full-page error state with a gold-accented 'Retry' button that calls `refetch()`. (3) If the user is definitively unauthenticated (identity hook confirms not logged in AND `isActorReady === true`), redirect to `/login`. (4) If `profileNotFound === true` (data is null but no error), render `<ProfileSetupModal />` without redirecting. (5) If profile data is present, render `<Outlet />` or children. This sequencing eliminates race conditions and prevents infinite spinners."
-        }
-      ]
-    },
-    {
-      "id": "REQ-23",
-      "summary": "Audit `App.tsx` `AuthGuard` component to ensure it waits for Internet Identity initialization to complete before making any routing decision, rendering the same full-page loading skeleton used in `ProtectedRoute` while `isInitializing` is `true`",
-      "acceptanceCriteria": [
-        "`AuthGuard` never redirects while the identity client is still initializing.",
-        "A loading skeleton is shown during initialization.",
-        "After initialization, routing decisions (redirect vs. render children) are correct."
+        "`AuthGuard` renders the full-page military-themed loading spinner (matte black background, gold/green accents) when `isInitializing === true`.",
+        "No redirect to `/login` occurs while `isInitializing` is `true`.",
+        "After `isInitializing` settles to `false`, unauthenticated users are redirected to `/login` and authenticated users see their protected content.",
+        "The 'Securing Connection' screen does not appear indefinitely after this fix."
       ],
       "file_operations": [
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Refactor the `AuthGuard` component to check the `isInitializing` flag from `useInternetIdentity`. While `isInitializing === true`, render the same full-page military-themed loading skeleton used in `ProtectedRoute` (gold spinner on matte black background). Once initialization completes (`isInitializing === false`), proceed with the existing routing logic: if unauthenticated, redirect to `/login`; otherwise render children. This prevents premature redirects during the identity client's startup phase."
+          "description": "Audit the RootLayout and AuthGuard logic to ensure no routing decision (redirect to `/login` or rendering protected content) occurs while `isInitializing` is `true`. While `isInitializing === true`, render only the full-page military-themed loading spinner with matte black background and gold/green accents. Only after `isInitializing` definitively settles to `false` should the guard redirect unauthenticated users to `/login` or render protected routes for authenticated users."
+        },
+        {
+          "path": "frontend/src/components/ProtectedRoute.tsx",
+          "operation": "modify",
+          "description": "Ensure the ProtectedRoute component does not make any routing decisions or show authentication-dependent UI while `isInitializing` is `true`. Render the full-page military-themed loading spinner during initialization. Only after initialization is complete should the component check authentication state and either redirect to login or render the protected outlet."
+        }
+      ]
+    },
+    {
+      "id": "REQ-44",
+      "summary": "Enforce strict three-condition check in useActorReady hook to prevent premature actor readiness signal",
+      "acceptanceCriteria": [
+        "`isActorReady` returns `false` while `isInitializing === true`.",
+        "`isActorReady` returns `false` when the principal equals `Principal.anonymous()`.",
+        "`isActorReady` returns `false` when the actor instance is `null` or `undefined`.",
+        "`isActorReady` returns `true` only after all three conditions are simultaneously satisfied.",
+        "No premature `true` value causes dependent queries to fire before the identity is resolved."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useActorReady.ts",
+          "operation": "modify",
+          "description": "Rewrite the useActorReady hook to enforce that `isActorReady` returns `true` only when all three conditions are met in strict order: (a) `isInitializing` from `useInternetIdentity` is `false`, (b) the principal is non-anonymous (not equal to `Principal.anonymous()`), and (c) the actor instance returned by `useActor` is non-null. If the hook currently sets `isActorReady` to `true` before any of these conditions are satisfied, update the logic to check all three conditions strictly and simultaneously before returning `true`."
         }
       ]
     }

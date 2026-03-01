@@ -1,53 +1,36 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T05:16:28.084Z",
-  "summary": "The diff implements all four requirements (REQ-20 through REQ-24) with generally good coverage. REQ-20 is fully implemented via the new useActorReady.ts wrapper hook. REQ-21 is implemented in useQueries.ts with principal-keyed cache, isActorReady gating, and null-as-not-found handling. REQ-22 is implemented in ProtectedRoute.tsx with the required state machine. REQ-23 is implemented in App.tsx's AuthGuard. REQ-24 appears partially addressed but the getProfile function is not confirmed visible in the truncated backend diff. The useQueries.ts file is also truncated so not all query hooks can be confirmed as gated on isActorReady.",
+  "generatedAt": "2026-03-01T06:04:43.842Z",
+  "summary": "The diff implements REQ-43 and REQ-44 correctly. REQ-42 (fixing the InternetIdentityProvider URL) is not addressed in any of the modified files — main.tsx is an immutable path but the requirement still needed to be fulfilled somewhere, and no alternative file was modified to set the correct identityProvider URL.",
   "missing_requirements": [
     {
-      "id": "REQ-24",
-      "requirement": "backend/main.mo getProfile function must return null (empty optional) when no profile exists, not trap.",
-      "reason": "The truncated backend/main.mo diff shows getCallerUserProfile and getUserProfile functions but no function named exactly 'getProfile' is visible. The frontend calls actor.getProfile() but this specific function cannot be confirmed present or fixed in the available diff evidence.",
+      "id": "REQ-42",
+      "requirement": "Ensure the InternetIdentityProvider receives the correct identityProvider URL for the current environment (local: http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943, production: https://identity.ic0.app), using import.meta.env.DEV or similar flag, removing any hardcoded/unreachable URL.",
+      "reason": "None of the modified files (App.tsx, ProtectedRoute.tsx, useActorReady.ts, frontend-file-summaries.txt, project_state.json) touch the InternetIdentityProvider instantiation or its identityProvider prop. main.tsx is listed as immutable but the requirement still demands the correct URL be set — no alternative file was modified to address this.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "id": "REQ-21",
-      "requirement": "All other query hooks in useQueries.ts must also gate their enabled flag on isActorReady.",
-      "reason": "The useQueries.ts diff is truncated after the beginning of useGetCustomLinks. Remaining query hooks (vault notes, email 2FA, etc.) cannot be confirmed as having their enabled flag gated on isActorReady.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/App.tsx",
+        "frontend/src/main.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "useGetProfile silently converts specific backend error message strings (Unauthorized, Anonymous, rejected) to null instead of propagating them as errors.",
-      "reason": "The build request specifies only that a null/empty optional response should be treated as profile-not-found and only thrown exceptions as genuine failures. Swallowing specific error strings was not requested and could mask real authorization failures.",
+      "description": "A 'settled flag' pattern using useRef and useState was introduced in RootLayout (App.tsx), ProtectedRoute.tsx, and useActorReady.ts to prevent re-showing the loader on brief re-initialization flashes caused by an authClient dependency loop.",
+      "reason": "The build request only asked to block routing decisions while isInitializing is true. It did not request a 'has ever settled' optimization or special handling of a secondary re-initialization flash from an authClient dependency loop. This is extra logic beyond what was specified.",
       "evidence": [
-        "frontend/src/hooks/useQueries.ts"
-      ]
-    },
-    {
-      "description": "ProfileSetupModal directly calls queryClient.invalidateQueries and refetchQueries after registration to force re-evaluation in ProtectedRoute.",
-      "reason": "The build request does not specify that ProfileSetupModal should directly manage query invalidation. This cache management behavior was added without being requested.",
-      "evidence": [
-        "frontend/src/components/ProfileSetupModal.tsx"
+        "frontend/src/App.tsx",
+        "frontend/src/components/ProtectedRoute.tsx",
+        "frontend/src/hooks/useActorReady.ts"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.82,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
     "frontend/src/App.tsx",
-    "frontend/src/components/ProfileSetupModal.tsx",
     "frontend/src/components/ProtectedRoute.tsx",
     "frontend/src/hooks/useActorReady.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/SettingsPage.tsx",
     "project_state.json"
   ]
 }

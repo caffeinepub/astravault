@@ -1,13 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the persistent infinite spinner and profile loading race conditions that prevent authenticated users from accessing the AstraVault dashboard.
+**Goal:** Fix the "Securing Connection" hang in AstraVault by correcting the Internet Identity provider URL and hardening the auth initialization guard logic.
 
 **Planned changes:**
-- Create a `useActorReady.ts` wrapper hook that exposes `isActorReady` as a stable boolean, true only when both the actor is non-null and the principal is authenticated and resolved
-- Rewrite `useGetProfile` in `useQueries.ts` to gate on `isActorReady`, include the principal in the cache key, and treat a `null` backend response as "profile not found" rather than an error; gate all other query hooks on `isActorReady` as well
-- Rewrite `ProtectedRoute.tsx` with a strict state machine: show a full-page loading skeleton while initializing, show a gold-accented Retry button on fetch error, redirect to login only when definitively unauthenticated, show `ProfileSetupModal` for new users, and render the dashboard for authenticated users with a profile
-- Audit `App.tsx` `AuthGuard` to never redirect during identity initialization, showing the loading skeleton until initialization settles
-- Audit `backend/main.mo` `getProfile` to return an empty optional (`null`) when no profile exists instead of trapping or returning an error variant
+- Set the `identityProvider` prop on `InternetIdentityProvider` to use the correct environment-aware URL (`http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943` for local, `https://identity.ic0.app` for production), selected via `import.meta.env.DEV` or `DFX_NETWORK`
+- Update `AuthGuard` in `App.tsx` to render only the full-page military-themed loading spinner while `isInitializing === true`, and defer any redirect or protected content rendering until `isInitializing` has settled to `false`
+- Rewrite `useActorReady.ts` to return `true` only when all three conditions are simultaneously met: `isInitializing` is `false`, the principal is non-anonymous, and the actor instance is non-null
 
-**User-visible outcome:** Authenticated users no longer see an infinite spinner and can access the dashboard normally; new users are shown the profile setup modal; unauthenticated users are only redirected to login after initialization completes.
+**User-visible outcome:** The Internet Identity iframe no longer hangs on "Securing Connection" — users see the loading spinner during initialization, then are correctly redirected to login or their protected content once authentication is fully resolved.
