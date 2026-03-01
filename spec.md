@@ -1,10 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Update the URLs for the mAadhaar and Xiaomi Home entries in the sidebar's default links data file.
+**Goal:** Fix the persistent infinite spinner and profile loading race conditions that prevent authenticated users from accessing the AstraVault dashboard.
 
 **Planned changes:**
-- Update the mAadhaar entry URL in the SERVICES category of `frontend/src/data/defaultLinks.ts` to `https://uidai.gov.in/en/`
-- Update the Xiaomi Home entry URL in the SERVICES category of `frontend/src/data/defaultLinks.ts` to `http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN`
+- Create a `useActorReady.ts` wrapper hook that exposes `isActorReady` as a stable boolean, true only when both the actor is non-null and the principal is authenticated and resolved
+- Rewrite `useGetProfile` in `useQueries.ts` to gate on `isActorReady`, include the principal in the cache key, and treat a `null` backend response as "profile not found" rather than an error; gate all other query hooks on `isActorReady` as well
+- Rewrite `ProtectedRoute.tsx` with a strict state machine: show a full-page loading skeleton while initializing, show a gold-accented Retry button on fetch error, redirect to login only when definitively unauthenticated, show `ProfileSetupModal` for new users, and render the dashboard for authenticated users with a profile
+- Audit `App.tsx` `AuthGuard` to never redirect during identity initialization, showing the loading skeleton until initialization settles
+- Audit `backend/main.mo` `getProfile` to return an empty optional (`null`) when no profile exists instead of trapping or returning an error variant
 
-**User-visible outcome:** Clicking the mAadhaar sidebar link opens the UIDAI website, and clicking the Xiaomi Home sidebar link opens its Google Play Store page, both in a new tab.
+**User-visible outcome:** Authenticated users no longer see an infinite spinner and can access the dashboard normally; new users are shown the profile setup modal; unauthenticated users are only redirected to login after initialization completes.

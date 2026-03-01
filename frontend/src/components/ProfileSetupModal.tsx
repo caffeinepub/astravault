@@ -1,193 +1,209 @@
 import React, { useState } from 'react';
-import { Shield, User, AtSign, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useRegisterUser } from '../hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { useActor } from '../hooks/useActor';
+import { Shield, Eye, EyeOff, Loader2, Lock } from 'lucide-react';
 import { hashPassword } from '../utils/encryption';
 
 export default function ProfileSetupModal() {
+  const { identity } = useInternetIdentity();
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [vaultPassword, setVaultPassword] = useState('');
-  const [confirmVaultPassword, setConfirmVaultPassword] = useState('');
-  const [showVaultPw, setShowVaultPw] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const registerUser = useRegisterUser();
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!name.trim()) newErrors.name = 'Full name is required';
-    if (!username.trim()) newErrors.username = 'Username is required';
-    if (username.trim().length < 3) newErrors.username = 'Username must be at least 3 characters';
-    if (!vaultPassword) newErrors.vaultPassword = 'Vault password is required';
-    if (vaultPassword.length < 6) newErrors.vaultPassword = 'Vault password must be at least 6 characters';
-    if (vaultPassword !== confirmVaultPassword) newErrors.confirmVaultPassword = 'Passwords do not match';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const principalText = identity?.getPrincipal().toString() ?? 'anonymous';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    setError('');
 
+    if (!name.trim()) {
+      setError('Name is required.');
+      return;
+    }
+    if (!username.trim()) {
+      setError('Username is required.');
+      return;
+    }
+    if (vaultPassword.length < 8) {
+      setError('Vault password must be at least 8 characters.');
+      return;
+    }
+    if (vaultPassword !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (!actor) {
+      setError('Connection not ready. Please try again.');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       const vaultPasswordHash = await hashPassword(vaultPassword);
-      await registerUser.mutateAsync({
-        name: name.trim(),
-        username: username.trim(),
-        email: email.trim() || null,
+      await actor.registerUser(
+        name.trim(),
+        username.trim(),
+        email.trim() || null,
         vaultPasswordHash,
-      });
-    } catch (err) {
-      setErrors({ submit: err instanceof Error ? err.message : 'Registration failed' });
+      );
+
+      // Invalidate all profile-related queries so ProtectedRoute re-evaluates
+      await queryClient.invalidateQueries({ queryKey: ['profile', principalText] });
+      await queryClient.invalidateQueries({ queryKey: ['currentUserProfile', principalText] });
+      await queryClient.refetchQueries({ queryKey: ['profile', principalText] });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg.includes('already exists') ? 'Account already exists.' : `Registration failed: ${msg}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-matte-black flex items-center justify-center p-4"
-      style={{ backgroundImage: "url('/assets/generated/dashboard-bg-texture.dim_1920x1080.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <img
-                src="/assets/generated/astravault-shield-logo.dim_256x256.png"
-                alt="AstraVault"
-                className="w-20 h-20 object-contain"
-              />
-            </div>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 border border-primary/30 mb-4">
+            <Shield className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="font-rajdhani text-3xl font-bold text-gold tracking-widest uppercase">
-            AstraVault
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1 tracking-wider">
-            Complete your profile setup
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Create Your Vault</h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            Set up your secure profile to get started
           </p>
         </div>
 
-        {/* Form Card */}
-        <div className="bg-surface-1 border border-military-green/30 rounded-lg p-6 shadow-green">
-          <h2 className="font-rajdhani text-xl font-semibold text-foreground mb-6 tracking-wide uppercase">
-            Create Your Command Profile
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+            {/* Name */}
             <div>
               <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Full Name
+                Full Name <span className="text-destructive">*</span>
               </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Enter your full name"
-                  className="w-full bg-surface-2 border border-border rounded pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-military-green focus:ring-1 focus:ring-military-green transition-colors"
-                />
-              </div>
-              {errors.name && <p className="text-destructive text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.name}</p>}
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your full name"
+                className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                disabled={isSubmitting}
+                required
+              />
             </div>
 
             {/* Username */}
             <div>
               <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Username
+                Username <span className="text-destructive">*</span>
               </label>
-              <div className="relative">
-                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  placeholder="Choose a username"
-                  className="w-full bg-surface-2 border border-border rounded pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-military-green focus:ring-1 focus:ring-military-green transition-colors"
-                />
-              </div>
-              {errors.username && <p className="text-destructive text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.username}</p>}
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Choose a username"
+                className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                disabled={isSubmitting}
+                required
+              />
             </div>
 
             {/* Email (optional) */}
             <div>
               <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Email <span className="text-muted-foreground/50 normal-case">(optional)</span>
+                Email <span className="text-muted-foreground font-normal normal-case">(optional)</span>
               </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className="w-full bg-surface-2 border border-border rounded pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-military-green focus:ring-1 focus:ring-military-green transition-colors"
-                />
-              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                disabled={isSubmitting}
+              />
             </div>
 
             {/* Vault Password */}
             <div>
               <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Vault Password
+                <Lock className="inline w-3 h-3 mr-1" />
+                Vault Password <span className="text-destructive">*</span>
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
-                  type={showVaultPw ? 'text' : 'password'}
+                  type={showPassword ? 'text' : 'password'}
                   value={vaultPassword}
-                  onChange={e => setVaultPassword(e.target.value)}
-                  placeholder="Set a secure vault password"
-                  className="w-full bg-surface-2 border border-border rounded pl-10 pr-10 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-military-green focus:ring-1 focus:ring-military-green transition-colors"
+                  onChange={(e) => setVaultPassword(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  className="w-full bg-background border border-border rounded px-3 py-2 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                  disabled={isSubmitting}
+                  required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowVaultPw(!showVaultPw)}
+                  onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
                 >
-                  {showVaultPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.vaultPassword && <p className="text-destructive text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.vaultPassword}</p>}
             </div>
 
-            {/* Confirm Vault Password */}
+            {/* Confirm Password */}
             <div>
               <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
-                Confirm Vault Password
+                Confirm Vault Password <span className="text-destructive">*</span>
               </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type={showVaultPw ? 'text' : 'password'}
-                  value={confirmVaultPassword}
-                  onChange={e => setConfirmVaultPassword(e.target.value)}
-                  placeholder="Confirm vault password"
-                  className="w-full bg-surface-2 border border-border rounded pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-military-green focus:ring-1 focus:ring-military-green transition-colors"
-                />
-              </div>
-              {errors.confirmVaultPassword && <p className="text-destructive text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{errors.confirmVaultPassword}</p>}
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repeat your vault password"
+                className="w-full bg-background border border-border rounded px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                disabled={isSubmitting}
+                required
+              />
             </div>
 
-            {errors.submit && (
-              <div className="bg-destructive/10 border border-destructive/30 rounded p-3 text-destructive text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {errors.submit}
+            {/* Error */}
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded px-3 py-2 text-sm text-destructive">
+                {error}
               </div>
             )}
+          </div>
 
-            <button
-              type="submit"
-              disabled={registerUser.isPending}
-              className="w-full bg-military-green hover:bg-military-green-bright text-white font-rajdhani font-semibold tracking-widest uppercase py-3 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-            >
-              {registerUser.isPending ? 'Setting up...' : 'Activate Command Profile'}
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground py-2.5 rounded font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Creating Vault...
+              </>
+            ) : (
+              <>
+                <Shield className="w-4 h-4" />
+                Create Secure Vault
+              </>
+            )}
+          </button>
+        </form>
 
-        <p className="text-center text-muted-foreground/50 text-xs mt-4">
-          Your vault password encrypts your private notes. Keep it safe.
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          Your vault is encrypted and stored on the Internet Computer blockchain.
         </p>
       </div>
     </div>

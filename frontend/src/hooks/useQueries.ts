@@ -1,46 +1,77 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useActorReady } from './useActorReady';
 import type { UserProfile, CustomLink, VaultNote } from '../backend';
 
-// ── User Profile ─────────────────────────────────────────────────────────────
+// ── Profile ──────────────────────────────────────────────────────────────────
 
-export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
+export function useGetProfile() {
+  const { isActorReady, actor, principalText } = useActorReady();
 
   const query = useQuery<UserProfile | null>({
-    queryKey: ['currentUserProfile'],
+    queryKey: ['profile', principalText ?? 'anonymous'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
+      if (!actor) return null;
       try {
-        // getCallerUserProfile may trap if the user doesn't have the #user role yet
-        // (i.e., brand-new principal). Treat any authorization trap as "no profile".
-        const profile = await actor.getCallerUserProfile();
-        return profile ?? null;
+        const result = await actor.getProfile();
+        return result ?? null;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        // If the backend traps with an authorization error, the user has no profile yet.
-        // Return null so the ProfileSetupModal is shown instead of an error screen.
+        // Treat authorization errors as "no profile" rather than an error state
         if (
           msg.includes('Unauthorized') ||
-          msg.includes('Only users') ||
-          msg.includes('not found')
+          msg.includes('Anonymous') ||
+          msg.includes('rejected')
         ) {
           return null;
         }
-        // Re-throw genuine network/canister errors so the error state is surfaced.
         throw err;
       }
     },
-    enabled: !!actor && !actorFetching,
+    enabled: isActorReady,
+    staleTime: 0,
+    retry: 1,
+  });
+
+  const profileNotFound =
+    isActorReady && query.isFetched && !query.isError && query.data === null;
+
+  return {
+    ...query,
+    profileNotFound,
+    isLoading: !isActorReady || query.isLoading || query.isFetching,
+    isFetched: isActorReady && query.isFetched,
+  };
+}
+
+// Keep getCallerUserProfile for backward compat (ProfileSetupModal invalidates this key too)
+export function useGetCallerUserProfile() {
+  const { isActorReady, actor, principalText } = useActorReady();
+
+  const query = useQuery<UserProfile | null>({
+    queryKey: ['currentUserProfile', principalText ?? 'anonymous'],
+    queryFn: async () => {
+      if (!actor) return null;
+      try {
+        const result = await actor.getCallerUserProfile();
+        return result ?? null;
+      } catch {
+        return null;
+      }
+    },
+    enabled: isActorReady,
+    staleTime: 0,
     retry: false,
   });
 
   return {
     ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
+    isLoading: !isActorReady || query.isLoading,
+    isFetched: isActorReady && query.isFetched,
   };
 }
+
+// ── Register / Update ─────────────────────────────────────────────────────────
 
 export function useRegisterUser() {
   const { actor } = useActor();
@@ -59,9 +90,10 @@ export function useRegisterUser() {
       vaultPasswordHash: string;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.registerUser(name, username, email, vaultPasswordHash);
+      await actor.registerUser(name, username, email, vaultPasswordHash);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     },
   });
@@ -81,29 +113,35 @@ export function useUpdateUserProfile() {
       name: string;
       username: string;
       email: string | null;
-      vaultPasswordHash?: string | null;
+      vaultPasswordHash: string | null;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.updateUserProfile(name, username, email, vaultPasswordHash ?? null);
+      await actor.updateUserProfile(name, username, email, vaultPasswordHash);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     },
   });
 }
 
-// ── Custom Links ─────────────────────────────────────────────────────────────
+// ── Custom Links ──────────────────────────────────────────────────────────────
 
 export function useGetCustomLinks() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { isActorReady, actor, principalText } = useActorReady();
 
   return useQuery<CustomLink[]>({
-    queryKey: ['customLinks'],
+    queryKey: ['customLinks', principalText ?? 'anonymous'],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getCustomLinks();
+      try {
+        return await actor.getCustomLinks();
+      } catch {
+        return [];
+      }
     },
-    enabled: !!actor && !actorFetching,
+    enabled: isActorReady,
+    staleTime: 30_000,
   });
 }
 
@@ -174,18 +212,23 @@ export function useDeleteCustomLink() {
   });
 }
 
-// ── Vault Notes ──────────────────────────────────────────────────────────────
+// ── Vault Notes ───────────────────────────────────────────────────────────────
 
 export function useGetVaultNotes() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { isActorReady, actor, principalText } = useActorReady();
 
   return useQuery<VaultNote[]>({
-    queryKey: ['vaultNotes'],
+    queryKey: ['vaultNotes', principalText ?? 'anonymous'],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getVaultNotes();
+      try {
+        return await actor.getVaultNotes();
+      } catch {
+        return [];
+      }
     },
-    enabled: !!actor && !actorFetching,
+    enabled: isActorReady,
+    staleTime: 30_000,
   });
 }
 
@@ -240,11 +283,10 @@ export function useDeleteVaultNote() {
   });
 }
 
-// ── Vault Password ───────────────────────────────────────────────────────────
+// ── Vault Password ────────────────────────────────────────────────────────────
 
 export function useChangeVaultPassword() {
   const { actor } = useActor();
-  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({
@@ -257,39 +299,36 @@ export function useChangeVaultPassword() {
       if (!actor) throw new Error('Actor not available');
       return actor.changeVaultPassword(currentPasswordHash, newPasswordHash);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-    },
   });
 }
 
 export function useResetVaultPassword() {
   const { actor } = useActor();
-  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (newPasswordHash: string) => {
       if (!actor) throw new Error('Actor not available');
       return actor.resetVaultPassword(newPasswordHash);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-    },
   });
 }
 
-// ── 2FA ──────────────────────────────────────────────────────────────────────
+// ── Email 2FA ─────────────────────────────────────────────────────────────────
 
 export function useIsEmail2faEnabled() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { isActorReady, actor, principalText } = useActorReady();
 
   return useQuery<boolean>({
-    queryKey: ['email2fa'],
+    queryKey: ['email2fa', principalText ?? 'anonymous'],
     queryFn: async () => {
       if (!actor) return false;
-      return actor.isEmail2faEnabled();
+      try {
+        return await actor.isEmail2faEnabled();
+      } catch {
+        return false;
+      }
     },
-    enabled: !!actor && !actorFetching,
+    enabled: isActorReady,
   });
 }
 
@@ -308,7 +347,7 @@ export function useToggleEmail2fa() {
   });
 }
 
-// ── Account ──────────────────────────────────────────────────────────────────
+// ── Account Deletion ──────────────────────────────────────────────────────────
 
 export function useDeleteAccount() {
   const { actor } = useActor();

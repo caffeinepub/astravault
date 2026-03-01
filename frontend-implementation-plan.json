@@ -1,23 +1,77 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Update mAadhaar and Xiaomi Home sidebar link URLs",
+  "title": "Fix persistent profile loading / infinite spinner blocking dashboard access",
   "requirements": [
     {
-      "id": "REQ-14",
-      "summary": "Update the URLs for mAadhaar and Xiaomi Home entries in the SERVICES category of defaultLinks.ts to their new target destinations while maintaining their existing configuration (names, icons, categories, and new tab behavior).",
+      "id": "REQ-20",
+      "summary": "Create a `useActorReady.ts` wrapper hook that derives `isActorReady` from the existing `useActor` hook, ensuring it returns `true` only when both the Internet Identity principal is fully resolved and non-anonymous, and the actor instance is confirmed non-null",
       "acceptanceCriteria": [
-        "The mAadhaar entry in the SERVICES category of defaultLinks.ts has its URL set to 'https://uidai.gov.in/en/'.",
-        "The Xiaomi Home entry in the SERVICES category of defaultLinks.ts has its URL set to 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN'.",
-        "Clicking the mAadhaar link in the sidebar opens 'https://uidai.gov.in/en/' in a new tab.",
-        "Clicking the Xiaomi Home link in the sidebar opens 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN' in a new tab.",
-        "No other default links are modified."
+        "`isActorReady` is `false` while the identity is initializing or the actor is null.",
+        "`isActorReady` becomes `true` only when the actor is non-null and the principal is authenticated and resolved.",
+        "No existing immutable file is modified."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/data/defaultLinks.ts",
+          "path": "frontend/src/hooks/useActorReady.ts",
+          "operation": "create",
+          "description": "Create a new hook that wraps `useActor` and `useInternetIdentity` to derive and export a stable `isActorReady` boolean. The hook returns `true` only when: (1) the Internet Identity client has finished initializing (`isInitializing === false`), (2) the user is authenticated (identity is non-null and principal is not anonymous), and (3) the actor instance from `useActor` is non-null. Export the `isActorReady` flag along with the actor instance for consumer convenience."
+        }
+      ]
+    },
+    {
+      "id": "REQ-21",
+      "summary": "Rewrite `useQueries.ts` to gate all query hooks (especially `useGetProfile`) on `isActorReady`, include the authenticated principal in cache keys, and treat `null` backend responses as 'profile not found' rather than errors",
+      "acceptanceCriteria": [
+        "`useGetProfile` does not fire until `isActorReady` is `true`.",
+        "Cache key includes the principal so re-authentication triggers a fresh fetch.",
+        "A `null` backend response sets a `profileNotFound` flag / returns `data: null` without entering the error state.",
+        "A thrown error sets `isError: true` and surfaces a retry mechanism."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Update the URL field of the mAadhaar entry in the SERVICES category to 'https://uidai.gov.in/en/' and update the URL field of the Xiaomi Home entry in the SERVICES category to 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN'. Do not modify any other properties (name, icon, category) or any other link entries in the file."
+          "description": "Refactor all query hooks to import and use `isActorReady` from the new `useActorReady` hook. For `useGetProfile` (which calls `getCallerUserProfile`), change the `enabled` flag to strictly gate on `isActorReady === true`, and update the cache key to `['profile', principalText]` (derive `principalText` from the identity hook). Modify the `queryFn` so that a `null` return value from the backend is treated as valid data (profile not found / new user) and does not trigger the error state; only thrown exceptions should set `isError: true`. Apply the same `isActorReady` gating to all other query hooks (custom links, vault notes, etc.)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-22",
+      "summary": "Rewrite `ProtectedRoute.tsx` to implement a strict state machine that prevents premature redirects, shows a full-page loading skeleton while `isActorReady` or profile query is loading, renders an error state with a Retry button on fetch failure, redirects to `/login` only when definitively unauthenticated, shows `ProfileSetupModal` for new users, and renders children when profile data is present",
+      "acceptanceCriteria": [
+        "No redirect to `/login` occurs while identity or actor is still initializing.",
+        "A full-page spinner is visible until both actor and profile query resolve.",
+        "A 'Retry' button is shown when the profile fetch errors.",
+        "New users see `ProfileSetupModal` instead of a redirect.",
+        "Authenticated users with a profile see the dashboard without an infinite spinner."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Ensure `useGetProfile` exports both the standard React Query return values (`data`, `isLoading`, `isError`, `refetch`) and a derived `profileNotFound` boolean (true when `data === null` and `isError === false`). This flag will be consumed by `ProtectedRoute` to distinguish 'new user' from 'error' states."
+        },
+        {
+          "path": "frontend/src/components/ProtectedRoute.tsx",
+          "operation": "modify",
+          "description": "Rewrite the component to import `isActorReady` from `useActorReady` and `useGetProfile` from `useQueries`. Implement the following state machine: (1) If `isActorReady === false` OR profile query `isLoading === true`, render a full-page military-themed loading skeleton (gold spinner on matte black background, no redirect). (2) If profile query `isError === true`, render a full-page error state with a gold-accented 'Retry' button that calls `refetch()`. (3) If the user is definitively unauthenticated (identity hook confirms not logged in AND `isActorReady === true`), redirect to `/login`. (4) If `profileNotFound === true` (data is null but no error), render `<ProfileSetupModal />` without redirecting. (5) If profile data is present, render `<Outlet />` or children. This sequencing eliminates race conditions and prevents infinite spinners."
+        }
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "summary": "Audit `App.tsx` `AuthGuard` component to ensure it waits for Internet Identity initialization to complete before making any routing decision, rendering the same full-page loading skeleton used in `ProtectedRoute` while `isInitializing` is `true`",
+      "acceptanceCriteria": [
+        "`AuthGuard` never redirects while the identity client is still initializing.",
+        "A loading skeleton is shown during initialization.",
+        "After initialization, routing decisions (redirect vs. render children) are correct."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Refactor the `AuthGuard` component to check the `isInitializing` flag from `useInternetIdentity`. While `isInitializing === true`, render the same full-page military-themed loading skeleton used in `ProtectedRoute` (gold spinner on matte black background). Once initialization completes (`isInitializing === false`), proceed with the existing routing logic: if unauthenticated, redirect to `/login`; otherwise render children. This prevents premature redirects during the identity client's startup phase."
         }
       ]
     }

@@ -1,39 +1,114 @@
 {
   "kind": "build_request",
-  "title": "Update mAadhaar and Xiaomi Home sidebar link URLs",
-  "priority": "normal",
+  "title": "Fix persistent profile loading / infinite spinner blocking dashboard access",
+  "projectName": "AstraVault",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-14",
-      "text": "In `frontend/src/data/defaultLinks.ts`, update the URL of the 'mAadhaar' entry in the SERVICES category to 'https://uidai.gov.in/en/' and update the URL of the 'Xiaomi Home' entry in the SERVICES category to 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN'. Both links must continue to open in a new tab.",
+      "id": "REQ-20",
+      "text": "Audit and rewrite `frontend/src/hooks/useActor.ts` (without modifying the immutable `frontend/src/hooks/useActor.ts` path — instead patch the internal logic exposed to consumers) so that `isActorReady` is only set to `true` after both (a) the Internet Identity principal is fully resolved and non-anonymous, and (b) the actor instance is confirmed non-null. Expose `isActorReady` as a stable boolean via the hook's return value. If the file is immutable, create a thin `useActorReady.ts` wrapper hook in `frontend/src/hooks/` that derives and exports `isActorReady` from the existing `useActor` hook.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-6"
         ],
         "quotes": [
-          "https://uidai.gov.in/en/ this in maaddhar.",
-          "http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN this in xiomi home"
+          "still loading and cant veiw"
         ]
       },
       "acceptanceCriteria": [
-        "The mAadhaar entry in the SERVICES category of defaultLinks.ts has its URL set to 'https://uidai.gov.in/en/'.",
-        "The Xiaomi Home entry in the SERVICES category of defaultLinks.ts has its URL set to 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN'.",
-        "Clicking the mAadhaar link in the sidebar opens 'https://uidai.gov.in/en/' in a new tab.",
-        "Clicking the Xiaomi Home link in the sidebar opens 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN' in a new tab.",
-        "No other default links are modified."
+        "`isActorReady` is `false` while the identity is initializing or the actor is null.",
+        "`isActorReady` becomes `true` only when the actor is non-null and the principal is authenticated and resolved.",
+        "No existing immutable file is modified."
+      ]
+    },
+    {
+      "id": "REQ-21",
+      "text": "Rewrite `frontend/src/hooks/useQueries.ts` — specifically the `useGetProfile` query — so that: (1) the query's `enabled` flag is strictly gated on `isActorReady === true`; (2) the React Query cache key includes the authenticated principal string (e.g. `['profile', principalText]`) so it auto-invalidates when the principal changes; (3) a `null` / empty optional returned by the backend is treated as 'profile not found' (new user flow) and not as an error; (4) only a thrown exception is treated as a genuine fetch failure. All other query hooks in the file must also gate their `enabled` flag on `isActorReady`.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "still loading and cant veiw"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`useGetProfile` does not fire until `isActorReady` is `true`.",
+        "Cache key includes the principal so re-authentication triggers a fresh fetch.",
+        "A `null` backend response sets a `profileNotFound` flag / returns `data: null` without entering the error state.",
+        "A thrown error sets `isError: true` and surfaces a retry mechanism."
+      ]
+    },
+    {
+      "id": "REQ-22",
+      "text": "Rewrite `frontend/src/components/ProtectedRoute.tsx` to implement the following strict state machine: (1) While `isActorReady` is `false` OR the profile query `isLoading` is `true` → render a full-page military-themed loading skeleton/spinner (no redirect, no children). (2) If the profile query `isError` is `true` → render a full-page error state with a gold-accented 'Retry' button that calls `refetch()`. (3) If the user is definitively unauthenticated (identity hook confirms not logged in AND actor initialization is complete) → redirect to `/login`. (4) If `data` is `null` (profile not found, new user) → render `<ProfileSetupModal>` without redirecting. (5) If profile data is present → render `<Outlet />` / children. Eliminate any race condition where the component redirects to login during the loading phase.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "still loading and cant veiw pl make changes and make it"
+        ]
+      },
+      "acceptanceCriteria": [
+        "No redirect to `/login` occurs while identity or actor is still initializing.",
+        "A full-page spinner is visible until both actor and profile query resolve.",
+        "A 'Retry' button is shown when the profile fetch errors.",
+        "New users see `ProfileSetupModal` instead of a redirect.",
+        "Authenticated users with a profile see the dashboard without an infinite spinner."
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "text": "Audit `frontend/src/App.tsx` — specifically the `AuthGuard` component — to ensure it does not redirect unauthenticated or 'still-initializing' users to `/login` before the Internet Identity `isInitializing` / `isLoading` flag has settled to `false`. The guard must wait for initialization to complete before making any routing decision. If `isInitializing` is `true`, render the same full-page loading skeleton used in `ProtectedRoute`.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "still loading and cant veiw"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`AuthGuard` never redirects while the identity client is still initializing.",
+        "A loading skeleton is shown during initialization.",
+        "After initialization, routing decisions (redirect vs. render children) are correct."
+      ]
+    },
+    {
+      "id": "REQ-24",
+      "text": "Audit `backend/main.mo` — specifically the `getProfile` function — to confirm it returns `null` (empty optional `?UserProfile`) when no profile exists for the caller principal, and only traps or returns an error for genuine runtime failures. If it currently traps on a missing profile or returns an error variant for 'not found', fix it to return `null` instead. Do not change any other backend logic or data structures.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "still loading and cant veiw"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`getProfile` returns `null` (empty optional) when the caller has no profile — it does not trap.",
+        "`getProfile` only traps or returns an error for genuine runtime failures.",
+        "No other backend functions or data models are changed."
       ]
     }
   ],
   "constraints": [
-    "Only update the URL fields for mAadhaar and Xiaomi Home entries in frontend/src/data/defaultLinks.ts — do not change their names, icons, categories, or any other properties.",
-    "Do not modify any files in the immutable paths list."
+    "Do not modify any file listed in frontend.immutablePaths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
+    "All fixes must be compatible with the existing military-inspired visual theme (matte black, military green, gold accents).",
+    "Do not introduce any new backend data models or change existing schema."
   ],
   "nonGoals": [
-    "Adding new sidebar links.",
-    "Changing any other existing link URLs.",
-    "Backend changes.",
-    "UI or theme modifications."
+    "Adding new features or pages.",
+    "Changing the visual theme or color palette.",
+    "Modifying sidebar links or custom link management.",
+    "Google Calendar integration.",
+    "Email 2FA or session management changes."
   ],
   "imageRequirements": {
     "required": [],

@@ -9,12 +9,9 @@ import {
   Trash2,
   Key,
   User,
-  Mail,
-  ToggleLeft,
   Bell,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import {
   useGetCallerUserProfile,
   useChangeVaultPassword,
@@ -22,6 +19,7 @@ import {
   useToggleEmail2fa,
   useUpdateUserProfile,
 } from '../hooks/useQueries';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { hashPassword } from '../utils/encryption';
 import DeleteAccountConfirmationModal from '../components/DeleteAccountConfirmationModal';
 
@@ -210,6 +208,7 @@ function ProfileSection() {
         name: name.trim(),
         username: username.trim(),
         email: email.trim() || null,
+        vaultPasswordHash: null, // null means "keep existing password"
       });
       setSuccess('Profile updated successfully');
     } catch (err) {
@@ -328,7 +327,7 @@ function TwoFASection() {
 
 function ActiveSessionsSection() {
   const { data: userProfile } = useGetCallerUserProfile();
-  const { identity } = useInternetIdentityInfo();
+  const { identity } = useInternetIdentity();
 
   const principalStr = identity?.getPrincipal().toString() || 'Unknown';
   const createdAt = userProfile?.createdAt
@@ -362,15 +361,6 @@ function ActiveSessionsSection() {
     </SectionCard>
   );
 }
-
-// Hook wrapper to get identity info
-function useInternetIdentityInfo() {
-  const { identity } = useInternetIdentityHook();
-  return { identity };
-}
-
-// We need to import useInternetIdentity separately to avoid naming conflicts
-import { useInternetIdentity as useInternetIdentityHook } from '../hooks/useInternetIdentity';
 
 // ── Danger Zone Section ───────────────────────────────────────────────────────
 
