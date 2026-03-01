@@ -1,0 +1,14 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-03-01T04:20:56.922Z",
+  "summary": "The diff correctly updates the mAadhaar URL to 'https://uidai.gov.in/en/' and the Xiaomi Home URL to 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN' in frontend/src/data/defaultLinks.ts. Both entries remain in the SERVICES category with their original names, icons, and categories unchanged. No other link URLs were modified. The 'new tab' behavior is handled at the rendering level (not in defaultLinks.ts itself), so it cannot be fully confirmed from this diff alone, but the data layer changes satisfy REQ-14's data requirements.",
+  "missing_requirements": [],
+  "hallucinated_features": [],
+  "confidence": 0.95,
+  "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/data/defaultLinks.ts",
+    "project_state.json"
+  ]
+}

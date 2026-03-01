@@ -1,0 +1,191 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 11,
+  "summary": "AstraVault – a military-inspired secure personal command center dashboard. Full-stack app with React+Vite+TypeScript frontend (TailwindCSS, ShadCN/Radix UI) and Node.js+Express+MongoDB backend. Features JWT auth with HTTP-only cookies, email verification, 2FA OTP, account lockout, AES-256 encrypted private vault, custom link management, categorized Indian financial/government service links in sidebar, and a settings page. Matte black & military green UI with gold accents.",
+  "architectural_notes": [
+    "Backend: Node.js + Express + MongoDB/Mongoose with Helmet, express-rate-limit, mongo-sanitize, xss-clean",
+    "Auth: JWT access token (15min) + refresh token (7 days) stored in HTTP-only secure cookies; token rotation on refresh",
+    "Vault encryption: AES-256-GCM with scrypt-derived key from vault password + userId salt",
+    "Frontend: React + Vite + TypeScript + TailwindCSS + Radix UI; Axios with auto refresh-token interceptor",
+    "Security: bcrypt salt 12, CORS restricted to frontend URL, rate limiting on login/register/vault routes"
+  ],
+  "known_issues": [
+    "Google Calendar widget is missing from the dashboard",
+    "Profile loading issue reported by user"
+  ],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-implement-internet-identity-based-authentication-as-the-sole-authentication-mechanism-on-first-login-create-a-user-profile-in-the-backend-with-fields-name-username-email-optional-vaultpasswordhash-customlinks-createdat-store-session-state-client-side-via-react-context-protect-all-dashboard-routes-redirect-unauthenticated-users-to-the-login-landing-page",
+      "title": "Implement Internet Identity-based authentication as the sole authentication mechanism. On first login, create a user profile in the backend with fields: name, username, email (optional), vaultPasswordHash, customLinks, createdAt. Store session state client-side via React Context. Protect all dashboard routes — redirect unauthenticated users to the login/landing page.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-vertical-sidebar-layout-with-the-following-categorized-links-each-category-and-link-must-be-rendered-with-an-appropriate-icon-categories-and-links-bank-state-bank-of-india-sbi-co-in-punjab-national-bank-pnbindia-in-india-post-payments-bank-ippbonline-com-email-gmail-mail-google-com-investment-coindcx-coindcx-com-et-money-etmoney-com-groww-groww-in-services-irctc-irctc-co-in-maadhaar-maadhaar-uidai-gov-in-digilocker-digilocker-gov-in-lic-digital-licindia-in-v380-pro-v380-cn-xiaomi-home-home-mi-com-payments-google-pay-pay-google-com-phonepe-phonepe-com-clicking-a-link-opens-the-url-in-a-new-tab",
+      "title": "Build a vertical sidebar layout with the following categorized links. Each category and link must be rendered with an appropriate icon. Categories and links: BANK (State Bank of India – sbi.co.in, Punjab National Bank – pnbindia.in, India Post Payments Bank – ippbonline.com), EMAIL (Gmail – mail.google.com), INVESTMENT (CoinDCX – coindcx.com, ET Money – etmoney.com, Groww – groww.in), SERVICES (IRCTC – irctc.co.in, mAadhaar – maadhaar.uidai.gov.in, DigiLocker – digilocker.gov.in, LIC Digital – licindia.in, V380 Pro – v380.cn, Xiaomi Home – home.mi.com), PAYMENTS (Google Pay – pay.google.com, PhonePe – phonepe.com). Clicking a link opens the URL in a new tab.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-custom-link-manager-accessible-from-the-sidebar-under-add-link-users-can-add-a-custom-link-with-name-url-category-selectable-from-existing-categories-or-a-new-one-and-an-icon-selectable-from-a-predefined-icon-set-custom-links-are-stored-per-user-in-the-backend-users-can-also-edit-and-delete-their-custom-links-custom-links-appear-in-the-sidebar-under-their-chosen-category",
+      "title": "Implement a custom link manager accessible from the sidebar under '+ ADD LINK'. Users can add a custom link with: name, URL, category (selectable from existing categories or a new one), and an icon (selectable from a predefined icon set). Custom links are stored per-user in the backend. Users can also edit and delete their custom links. Custom links appear in the sidebar under their chosen category.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-private-vault-as-a-separate-protected-route-vault-access-requires-the-user-to-enter-a-secondary-vault-password-the-vault-password-is-hashed-stored-in-the-backend-user-record-inside-the-vault-users-can-add-edit-delete-and-search-encrypted-notes-note-content-must-be-aes-256-encrypted-before-storage-in-the-backend-notes-are-decrypted-client-side-only-after-the-correct-vault-password-is-entered-provide-a-vault-password-reset-option",
+      "title": "Implement a Private Vault as a separate protected route (/vault). Access requires the user to enter a secondary vault password. The vault password is hashed (stored in the backend user record). Inside the vault, users can add, edit, delete, and search encrypted notes. Note content must be AES-256 encrypted before storage in the backend. Notes are decrypted client-side only after the correct vault password is entered. Provide a vault password reset option.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-settings-page-settings-with-the-following-sections-1-change-login-password-re-authenticate-then-set-new-password-with-the-same-strength-rules-2-change-vault-password-enter-current-vault-password-then-new-vault-password-3-enable-disable-email-otp-2fa-toggle-with-confirmation-4-view-active-sessions-list-principal-id-timestamp-5-logout-all-sessions-button-6-delete-account-with-confirmation-dialog",
+      "title": "Build a Settings page (/settings) with the following sections: (1) Change login password (re-authenticate, then set new password with the same strength rules), (2) Change vault password (enter current vault password, then new vault password), (3) Enable/disable Email OTP 2FA (toggle with confirmation), (4) View active sessions list (principal ID + timestamp), (5) Logout all sessions button, (6) Delete account with confirmation dialog.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-profile-dropdown-in-the-top-right-corner-of-the-dashboard-header-it-must-display-the-user-s-name-username-and-avatar-initial-dropdown-options-profile-settings-logout-logout-must-show-a-confirmation-modal-before-clearing-the-session",
+      "title": "Add a profile dropdown in the top-right corner of the dashboard header. It must display the user's name/username and avatar initial. Dropdown options: Profile, Settings, Logout. Logout must show a confirmation modal before clearing the session.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-display-a-footer-on-the-dashboard-with-the-text-developed-by-shubham-rathore-on-the-first-line-and-rajput-creating-history-on-the-second-line-style-it-with-a-subtle-gold-accent-color-consistent-with-the-overall-theme",
+      "title": "Display a footer on the dashboard with the text 'Developed by Shubham Rathore' on the first line and 'Rajput – Creating History' on the second line. Style it with a subtle gold accent color consistent with the overall theme.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-design-and-enforce-a-cohesive-military-inspired-visual-theme-throughout-the-entire-application-matte-black-0a0a0a-111-background-deep-military-green-2d4a1e-3a5c28-as-the-primary-accent-color-gold-c9a84c-d4af37-as-the-highlight-accent-for-active-states-borders-and-footer-text-use-a-clean-sans-serif-typeface-apply-shield-and-command-style-iconography-in-the-sidebar-and-dashboard-header-ensure-the-ui-feels-premium-minimal-and-consistent-across-all-pages",
+      "title": "Design and enforce a cohesive military-inspired visual theme throughout the entire application: matte black (#0a0a0a / #111) background, deep military green (#2d4a1e / #3a5c28) as the primary accent color, gold (#c9a84c / #d4af37) as the highlight accent for active states, borders, and footer text. Use a clean sans-serif typeface. Apply shield and command-style iconography in the sidebar and dashboard header. Ensure the UI feels premium, minimal, and consistent across all pages.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-google-calendar-quick-access-link-entry-in-the-email-or-services-category-of-the-default-sidebar-links-in-frontend-src-data-defaultlinks-ts-the-link-should-be-named-google-calendar-point-to-https-calendar-google-com-use-an-appropriate-calendar-icon-from-the-available-icon-set-and-open-in-a-new-tab-consistent-with-how-all-other-default-links-are-rendered-in-the-sidebar",
+      "title": "Add a Google Calendar quick-access link entry in the EMAIL or SERVICES category of the default sidebar links in `frontend/src/data/defaultLinks.ts`. The link should be named 'Google Calendar', point to 'https://calendar.google.com', use an appropriate calendar icon from the available icon set, and open in a new tab — consistent with how all other default links are rendered in the sidebar.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-investigate-and-fix-the-profile-loading-issue-in-protectedroute-and-usequeries-hooks-ensure-that-after-internet-identity-authentication-the-user-profile-is-fetched-reliably-from-the-backend-handle-edge-cases-1-actor-not-yet-initialized-when-profile-query-fires-2-query-firing-before-the-identity-is-fully-resolved-3-missing-or-null-profile-response-not-correctly-distinguished-from-a-loading-state-add-appropriate-loading-skeleton-spinner-while-the-profile-is-being-fetched-and-display-a-meaningful-error-state-if-the-fetch-fails-allowing-the-user-to-retry",
+      "title": "Investigate and fix the profile loading issue in ProtectedRoute and useQueries hooks. Ensure that after Internet Identity authentication, the user profile is fetched reliably from the backend. Handle edge cases: (1) actor not yet initialized when profile query fires, (2) query firing before the identity is fully resolved, (3) missing or null profile response not correctly distinguished from a loading state. Add appropriate loading skeleton/spinner while the profile is being fetched and display a meaningful error state if the fetch fails, allowing the user to retry.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-data-defaultlinks-ts-update-the-url-of-the-state-bank-of-india-entry-in-the-bank-category-from-its-current-value-to-https-sbi-bank-in",
+      "title": "In `frontend/src/data/defaultLinks.ts`, update the URL of the 'State Bank of India' entry in the BANK category from its current value to 'https://sbi.bank.in/'.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-frontend-src-data-defaultlinks-ts-update-the-url-of-the-maadhaar-entry-in-the-services-category-to-https-uidai-gov-in-en-and-update-the-url-of-the-xiaomi-home-entry-in-the-services-category-to-http-play-google-com-store-apps-details-id-com-xiaomi-smarthome-hl-en-in-both-links-must-continue-to-open-in-a-new-tab",
+      "title": "In `frontend/src/data/defaultLinks.ts`, update the URL of the 'mAadhaar' entry in the SERVICES category to 'https://uidai.gov.in/en/' and update the URL of the 'Xiaomi Home' entry in the SERVICES category to 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN'. Both links must continue to open in a new tab.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "JWT authentication with access/refresh tokens in HTTP-only cookies, email verification (15min expiry), account lock after 5 failed attempts",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Email 2FA OTP support during login flow",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "AES-256 encrypted private vault for notes with secondary vault password, CRUD + search",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Sidebar with categorized Indian financial/government links (SBI, PNB, IRCTC, DigiLocker, Groww, etc.)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Custom link management: add/edit/delete links with category and icon selection",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Settings page: change login/vault password, enable 2FA, view/logout sessions, delete account",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Google Calendar OAuth 2.0 integration with event fetch, add, and sync widget on dashboard",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Dockerfile and .env.example for production deployment",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Implement backend data models in Motoko for: User (principal, name, username, emailVerified, vaultPasswordHash, failedLoginAttempts, lockUntil, refreshTokens array, customLinks array, createdAt), CustomLink (id, name, url, category, iconName, userId), and VaultNote (id, encryptedContent, userId, createdAt). Expose CRUD endpoints for each model, protected by caller principal verification.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Audit the backend `getProfile` Motoko function to ensure it returns a well-formed optional profile response for the authenticated caller principal. Confirm it does not return an error or trap for a principal that has no profile, and that it correctly distinguishes between 'profile not found' and an actual error condition.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Update mAadhaar sidebar link URL to https://uidai.gov.in/en/ and Xiaomi Home link URL to http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "AstraVault",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

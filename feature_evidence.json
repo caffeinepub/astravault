@@ -1,0 +1,24 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-in-frontend-src-data-defaultlinks-ts-update-the-url-of-the-maadhaar-entry-in-the-services-category-to-https-uidai-gov-in-en-and-update-the-url-of-the-xiaomi-home-entry-in-the-services-category-to-http-play-google-com-store-apps-details-id-com-xiaomi-smarthome-hl-en-in-both-links-must-continue-to-open-in-a-new-tab",
+      "featureTitle": "In `frontend/src/data/defaultLinks.ts`, update the URL of the 'mAadhaar' entry in the SERVICES category to 'https://uidai.gov.in/en/' and update the URL of the 'Xiaomi Home' entry in the SERVICES category to 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN'. Both links must continue to open in a new tab.",
+      "files": [
+        "frontend/src/data/defaultLinks.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-14"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

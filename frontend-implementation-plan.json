@@ -1,0 +1,25 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Update mAadhaar and Xiaomi Home sidebar link URLs",
+  "requirements": [
+    {
+      "id": "REQ-14",
+      "summary": "Update the URLs for mAadhaar and Xiaomi Home entries in the SERVICES category of defaultLinks.ts to their new target destinations while maintaining their existing configuration (names, icons, categories, and new tab behavior).",
+      "acceptanceCriteria": [
+        "The mAadhaar entry in the SERVICES category of defaultLinks.ts has its URL set to 'https://uidai.gov.in/en/'.",
+        "The Xiaomi Home entry in the SERVICES category of defaultLinks.ts has its URL set to 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN'.",
+        "Clicking the mAadhaar link in the sidebar opens 'https://uidai.gov.in/en/' in a new tab.",
+        "Clicking the Xiaomi Home link in the sidebar opens 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN' in a new tab.",
+        "No other default links are modified."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/data/defaultLinks.ts",
+          "operation": "modify",
+          "description": "Update the URL field of the mAadhaar entry in the SERVICES category to 'https://uidai.gov.in/en/' and update the URL field of the Xiaomi Home entry in the SERVICES category to 'http://play.google.com/store/apps/details?id=com.xiaomi.smarthome&hl=en_IN'. Do not modify any other properties (name, icon, category) or any other link entries in the file."
+        }
+      ]
+    }
+  ]
+}
